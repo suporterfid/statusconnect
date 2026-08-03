@@ -1,6 +1,6 @@
 # StatusConnect Implementation Status
 
-Current Phase: PR1 (Tenancy, auth, isolation)
+Current Phase: PR2 (Outbound policy port)
 
 ## PR Sequence Table
 
@@ -8,7 +8,7 @@ Current Phase: PR1 (Tenancy, auth, isolation)
 |---|---|---|---|---|
 | **PR0** | Repo scaffold & Docker loop | Completed | [#1](https://github.com/suporterfid/statusconnect/issues/1) | Scaffold, compose stack, stc wrapper, target mock service, PHPUnit test suite passing |
 | **PR1** | Tenancy, auth, isolation | Completed | [#2](https://github.com/suporterfid/statusconnect/issues/2) | Core tables & security migrations, Eloquent models, PublicId, ApiKeyService, sc_* bearer auth, workspace scoping middleware (ResolveTenantEnvironment), tenant isolation (404), RBAC, 19 unit & feature tests passing |
-| **PR2** | Outbound policy port | Pending | - | - |
+| **PR2** | Outbound policy port | In Progress | [#3](https://github.com/suporterfid/statusconnect/issues/3) | OutboundPolicy, IpClassifier, UrlValidator, DnsResolver, Pinned Transport |
 | **PR3** | Monitors CRUD + assertions | Pending | - | - |
 | **PR4** | Scheduler core (sequential) | Pending | - | - |
 | **PR5** | Parallel execution | Pending | - | - |
