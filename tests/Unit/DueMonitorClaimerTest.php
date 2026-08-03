@@ -101,6 +101,23 @@ class DueMonitorClaimerTest extends TestCase
         $this->assertSame('2026-08-03 12:01:00', $monitor->fresh()->next_check_at->format('Y-m-d H:i:s'));
     }
 
+    public function test_claims_a_monitor_scheduled_at_the_exact_current_second(): void
+    {
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Exactly Due Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 12:00:00 UTC'),
+        ]);
+
+        $claimed = $this->claimer->claimDueMonitors();
+
+        $this->assertSame($monitor->id, $claimed->sole()->id);
+    }
+
     public function test_late_claim_does_not_backfill_missed_intervals(): void
     {
         $monitor = Monitor::query()->create([

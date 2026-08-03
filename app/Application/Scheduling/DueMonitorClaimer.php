@@ -6,6 +6,7 @@ use App\Domain\Shared\Clock;
 use App\Infrastructure\Persistence\Eloquent\Monitor;
 use DateTimeImmutable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -33,17 +34,18 @@ final class DueMonitorClaimer
         $leaseSeconds ??= max(1, (int) config('scheduler.claim_ttl_minutes', 5)) * 60;
         $claimExpiresAt = $now->modify("+{$leaseSeconds} seconds");
 
-        return DB::transaction(function () use ($now, $claimExpiresAt, $limit, $excludedMonitorIds, $maxTimeoutMs) {
+        try {
+            return DB::transaction(function () use ($now, $claimExpiresAt, $limit, $excludedMonitorIds, $maxTimeoutMs) {
             $nowFormatted = $now->format('Y-m-d H:i:s');
 
             // Mirrors taskconnect app/Application/Scheduling/DueTaskClaimer.php.
             $query = Monitor::query()
                 ->where('enabled', true)
                 ->whereNotNull('next_check_at')
-                ->where('next_check_at', '<', $nowFormatted)
+                ->where('next_check_at', '<=', $nowFormatted)
                 ->where(function ($q) use ($nowFormatted) {
                     $q->whereNull('claim_expires_at')
-                        ->orWhere('claim_expires_at', '<=', $nowFormatted);
+                        ->orWhere('claim_expires_at', '<', $nowFormatted);
                 })
                 ->orderBy('next_check_at')
                 ->limit($limit);
@@ -53,7 +55,7 @@ final class DueMonitorClaimer
             }
 
             if ($maxTimeoutMs !== null) {
-                $query->where('timeout_ms', '<', $maxTimeoutMs);
+                $query->where('timeout_ms', '<=', $maxTimeoutMs);
             }
 
             if (DB::connection()->getDriverName() === 'mysql') {
@@ -74,13 +76,13 @@ final class DueMonitorClaimer
                     ->whereKey($candidate->id)
                     ->where('enabled', true)
                     ->whereNotNull('next_check_at')
-                    ->where('next_check_at', '<', $nowFormatted)
+                    ->where('next_check_at', '<=', $nowFormatted)
                     ->where(function ($q) use ($nowFormatted) {
                         $q->whereNull('claim_token')
                             ->orWhere('claim_expires_at', '<', $nowFormatted);
                     })
                     ->when($maxTimeoutMs !== null, function ($query) use ($maxTimeoutMs) {
-                        $query->where('timeout_ms', '<', $maxTimeoutMs);
+                        $query->where('timeout_ms', '<=', $maxTimeoutMs);
                     })
                     ->update([
                         'claim_token' => $claimToken,
@@ -97,8 +99,16 @@ final class DueMonitorClaimer
                 $claimed->push($candidate->load(['assertions', 'tenant', 'environment']));
             }
 
-            return $claimed;
-        });
+                return $claimed;
+            });
+        } catch (QueryException $exception) {
+            if (DB::connection()->getDriverName() === 'sqlite'
+                && str_contains(strtolower($exception->getMessage()), 'database is locked')) {
+                return new Collection();
+            }
+
+            throw $exception;
+        }
     }
 
     private function nextCheckAt(Monitor $monitor, DateTimeImmutable $now): DateTimeImmutable
@@ -109,5 +119,21 @@ final class DueMonitorClaimer
         $nextFromPreviousPhase = $previous->modify(sprintf('+%d seconds', $monitor->interval_seconds));
 
         return $nextFromPreviousPhase > $now ? $nextFromPreviousPhase : $now;
+    }
+
+    public function releaseClaim(Monitor $monitor): bool
+    {
+        if ($monitor->claim_token === null) {
+            return false;
+        }
+
+        return Monitor::query()
+            ->whereKey($monitor->id)
+            ->where('claim_token', $monitor->claim_token)
+            ->update([
+                'claim_token' => null,
+                'claimed_at' => null,
+                'claim_expires_at' => null,
+            ]) === 1;
     }
 }

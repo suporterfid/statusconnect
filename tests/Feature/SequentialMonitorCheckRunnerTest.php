@@ -61,11 +61,11 @@ class SequentialMonitorCheckRunnerTest extends TestCase
             'name' => 'Too slow for remaining budget',
             'kind' => 'http',
             'target' => 'http://target:8080/status/200',
-            'timeout_ms' => 10_000,
+            'timeout_ms' => 1_499,
             'next_check_at' => now()->subMinute(),
         ]);
         $now = 1_000.0;
-        $budget = new TickBudget(1_000.0, 1.0, static function () use (&$now): float {
+        $budget = new TickBudget(1_000.0, 1.5, static function () use (&$now): float {
             return $now;
         });
 
