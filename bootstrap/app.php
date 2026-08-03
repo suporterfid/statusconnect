@@ -13,7 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->statefulApi();
+
+        $middleware->alias([
+            'auth.api_or_sanctum' => \App\Http\Middleware\AuthenticateApiKeyOrSanctum::class,
+            'tenant.context' => \App\Http\Middleware\ResolveTenantEnvironment::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
