@@ -1,0 +1,19 @@
+# CI overrides: keep services internal, avoid host port collisions.
+services:
+  app:
+    ports: !override
+      - "8070:80"
+
+  mysql:
+    ports: !override []
+
+  mailpit:
+    ports: !override []
+
+  target:
+    ports: !override
+      - "8095:8080"
+
+  node:
+    ports: !override
+      - "5173:5173"

@@ -1,0 +1,28 @@
+---
+description: Non-negotiable product constraints — shared hosting, Docker-only, GitHub issues
+alwaysApply: true
+---
+
+# Hard constraints
+
+StatusConnect is a multi-tenant uptime monitor and public status page for **PHP/MySQL shared hosting** (PHP 8.2+, MySQL 8.0+, per-minute cron). Document root is `public/`.
+
+## Infrastructure
+
+- **No required** Redis, Memcached, RabbitMQ, Kafka, Horizon, Reverb, Octane, Supervisor `queue:work`, or other always-on workers/brokers.
+- Async work uses **MySQL-backed claiming + cron** (`monitor:check-due`, `DueMonitorClaimer`).
+- Keep `QUEUE_CONNECTION`, `CACHE_STORE`, and `SESSION_DRIVER` on database/file/sync-friendly stores. Redis may be opt-in only, never required.
+- Do not assume paid cloud services or a VPS for core functionality.
+- Runtime shell execution functions (`exec`, `shell_exec`, `proc_open`, `popen`) are strictly forbidden.
+
+## Dev environment
+
+- **Docker only** — do not install or run PHP, Composer, Node, or npm on the host.
+- Windows: `.\scripts\stc.ps1 …` · Linux/macOS: `./scripts/stc.sh …` (Makefile proxies to `stc.sh` via bash only).
+- Never commit Packagist mirror config; `COMPOSER_PACKAGIST_URL` is session-only.
+
+## Work tracking
+
+- Track non-trivial work as GitHub issues in `suporterfid/statusconnect`; keep `STATUS.md` and `BACKLOG.md` updated.
+
+Canonical overview: `CLAUDE.md`. Product spec: `docs/specs/statusconnectinitialspecandbuildplan.md`.
