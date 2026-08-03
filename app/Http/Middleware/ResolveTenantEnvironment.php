@@ -19,6 +19,11 @@ class ResolveTenantEnvironment
         /** @var ApiKey|null $apiKey */
         $apiKey = $request->attributes->get('api_key');
 
+        if ($apiKey === null && $user instanceof \App\Auth\ApiKeyActor) {
+            $apiKey = $user->apiKey;
+            $request->attributes->set('api_key', $apiKey);
+        }
+
         if ($user === null && $apiKey === null) {
             abort(401);
         }

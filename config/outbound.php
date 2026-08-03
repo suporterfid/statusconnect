@@ -11,7 +11,7 @@ return [
     'request_body_limit' => (int) env('OUTBOUND_REQUEST_BODY_LIMIT', 65536),
     'redirect_limit' => (int) env('OUTBOUND_REDIRECT_LIMIT', 3),
     'allowed_ports' => array_map('intval', array_filter(explode(',', env('OUTBOUND_ALLOWED_PORTS', '80,443,8095')))),
-    'allow_http' => filter_var(env('OUTBOUND_ALLOW_HTTP', false), FILTER_VALIDATE_BOOL),
+    'allow_http' => filter_var(env('OUTBOUND_ALLOW_HTTP', in_array($appEnv, ['local', 'testing'], true)), FILTER_VALIDATE_BOOL),
     'user_agent' => env('OUTBOUND_USER_AGENT', 'StatusConnect/1.0'),
     'platform_allow_hosts' => array_values(array_filter(array_map(
         static fn (string $host): string => strtolower(trim($host)),
