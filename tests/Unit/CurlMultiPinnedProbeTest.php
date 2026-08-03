@@ -20,6 +20,13 @@ class CurlMultiPinnedProbeTest extends TestCase
         $this->assertFalse($second[CURLOPT_FOLLOWLOCATION]);
     }
 
+    public function test_brackets_ipv6_literal_hosts_and_pinned_ips_in_resolve_entries(): void
+    {
+        $options = CurlMultiPinnedProbe::optionsFor($this->requestFor('2001:db9::1', 443, '2001:db9::1'));
+
+        $this->assertSame(['[2001:db9::1]:443:[2001:db9::1]'], $options[CURLOPT_RESOLVE]);
+    }
+
     private function requestFor(string $host, int $port, string $ip): PinnedHttpRequest
     {
         return new PinnedHttpRequest(

@@ -21,7 +21,7 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
 
         return [
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_RESOLVE => [sprintf('%s:%d:%s', $endpoint->host, $endpoint->port, self::formatIp($endpoint->pinnedIp))],
+            CURLOPT_RESOLVE => [sprintf('%s:%d:%s', self::formatHost($endpoint->host), $endpoint->port, self::formatIp($endpoint->pinnedIp))],
         ];
     }
 
@@ -266,5 +266,10 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
     private static function formatIp(string $ip): string
     {
         return str_contains($ip, ':') ? "[{$ip}]" : $ip;
+    }
+
+    private static function formatHost(string $host): string
+    {
+        return str_contains($host, ':') ? "[{$host}]" : $host;
     }
 }

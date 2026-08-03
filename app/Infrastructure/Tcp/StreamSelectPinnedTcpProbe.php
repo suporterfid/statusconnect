@@ -66,14 +66,16 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
                         continue;
                     }
                     $item = $batch->pending[$key];
-                    $connected = stream_socket_get_name($socket, true) !== false;
+                    $now = hrtime(true);
+                    $timedOut = $item['deadline'] <= $now || ($deadline !== null && $deadline <= $now);
+                    $connected = ! $timedOut && stream_socket_get_name($socket, true) !== false;
                     fclose($socket);
                     unset($batch->pending[$key]);
                     $batch->results[] = new PinnedTcpResult(
                         $item['request']->monitorId,
                         $connected,
                         (int) round((hrtime(true) - $item['startedAt']) / 1_000_000),
-                        $connected ? null : 'tcp_connect_error',
+                        $connected ? null : ($timedOut ? 'tcp_timeout' : 'tcp_connect_error'),
                     );
                 }
             }
