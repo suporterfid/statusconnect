@@ -33,10 +33,10 @@ class CheckExecutor
     ) {
     }
 
-    public function execute(Monitor $monitor): CheckResult
+    public function execute(Monitor $monitor): ?CheckResult
     {
         $now = $this->clock->nowUtc();
-        $startTime = microtime(true);
+        $claimToken = $monitor->claim_token;
 
         if ($monitor->kind === MonitorKind::HTTP) {
             $outcome = $this->executeHttpCheck($monitor);
@@ -56,7 +56,7 @@ class CheckExecutor
 
         $evalResult = $this->assertionEvaluator->evaluate($outcome, $assertionDefs);
 
-        return DB::transaction(function () use ($monitor, $outcome, $evalResult, $now) {
+        return DB::transaction(function () use ($monitor, $outcome, $evalResult, $now, $claimToken) {
             $state = $evalResult->state;
 
             $consecutiveFailures = in_array($state, [CheckState::DOWN, CheckState::DEGRADED], true)
@@ -67,7 +67,12 @@ class CheckExecutor
                 ? $monitor->consecutive_successes + 1
                 : 0;
 
-            $monitor->update([
+            $monitorUpdate = Monitor::query()->whereKey($monitor->id);
+            if ($claimToken !== null) {
+                $monitorUpdate->where('claim_token', $claimToken);
+            }
+
+            $updated = $monitorUpdate->update([
                 'current_state' => $state,
                 'consecutive_failures' => $consecutiveFailures,
                 'consecutive_successes' => $consecutiveSuccesses,
@@ -77,6 +82,10 @@ class CheckExecutor
                 'claimed_at' => null,
                 'claim_expires_at' => null,
             ]);
+
+            if ($updated === 0) {
+                return null;
+            }
 
             $failureExcerpt = null;
             if ($state !== CheckState::UP && $outcome->body !== '') {

@@ -32,6 +32,8 @@ final class StaleClaimRecovery
 
         return Monitor::query()
             ->whereIn('id', $ids)
+            ->whereNotNull('claim_token')
+            ->where('claim_expires_at', '<', $now)
             ->update([
                 'claim_token' => null,
                 'claimed_at' => null,

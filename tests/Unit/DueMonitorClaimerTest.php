@@ -153,6 +153,23 @@ class DueMonitorClaimerTest extends TestCase
         $this->assertCount(0, $claimed);
     }
 
+    public function test_does_not_reclaim_a_lease_expiring_at_the_exact_current_second(): void
+    {
+        Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Exactly Expiring Lease',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:59:00 UTC'),
+            'claim_token' => 'still-owned-at-boundary',
+            'claim_expires_at' => new DateTimeImmutable('2026-08-03 12:00:00 UTC'),
+        ]);
+
+        $this->assertCount(0, $this->claimer->claimDueMonitors());
+    }
+
     public function test_overlapping_claim_attempts_do_not_double_claim_a_monitor(): void
     {
         Monitor::query()->create([

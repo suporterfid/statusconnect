@@ -22,9 +22,15 @@ final class SequentialMonitorCheckRunner
         $claimedMonitorIds = [];
 
         while ($budget->canClaimMore()) {
+            $remainingTimeoutMs = (int) floor($budget->remainingSeconds() * 1000);
+            if ($remainingTimeoutMs <= 0) {
+                break;
+            }
+
             $monitors = $this->claimer->claimDueMonitors(
                 limit: 1,
                 excludedMonitorIds: $claimedMonitorIds,
+                maxTimeoutMs: $remainingTimeoutMs,
             );
             $monitor = $monitors->first();
 
@@ -34,8 +40,9 @@ final class SequentialMonitorCheckRunner
 
             $claimed++;
             $claimedMonitorIds[] = $monitor->id;
-            $this->executor->execute($monitor);
-            $executed++;
+            if ($this->executor->execute($monitor) !== null) {
+                $executed++;
+            }
         }
 
         $budgetStopped = $budget->exhausted();

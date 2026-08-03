@@ -22,20 +22,25 @@ final class DueMonitorClaimer
     /**
      * @param  list<int>  $excludedMonitorIds
      */
-    public function claimDueMonitors(int $limit = 50, ?int $leaseSeconds = null, array $excludedMonitorIds = []): Collection
+    public function claimDueMonitors(
+        int $limit = 50,
+        ?int $leaseSeconds = null,
+        array $excludedMonitorIds = [],
+        ?int $maxTimeoutMs = null,
+    ): Collection
     {
         $now = $this->clock->nowUtc();
         $leaseSeconds ??= max(1, (int) config('scheduler.claim_ttl_minutes', 5)) * 60;
         $claimExpiresAt = $now->modify("+{$leaseSeconds} seconds");
 
-        return DB::transaction(function () use ($now, $claimExpiresAt, $limit, $excludedMonitorIds) {
+        return DB::transaction(function () use ($now, $claimExpiresAt, $limit, $excludedMonitorIds, $maxTimeoutMs) {
             $nowFormatted = $now->format('Y-m-d H:i:s');
 
             // Mirrors taskconnect app/Application/Scheduling/DueTaskClaimer.php.
             $query = Monitor::query()
                 ->where('enabled', true)
                 ->whereNotNull('next_check_at')
-                ->where('next_check_at', '<=', $nowFormatted)
+                ->where('next_check_at', '<', $nowFormatted)
                 ->where(function ($q) use ($nowFormatted) {
                     $q->whereNull('claim_expires_at')
                         ->orWhere('claim_expires_at', '<=', $nowFormatted);
@@ -45,6 +50,10 @@ final class DueMonitorClaimer
 
             if ($excludedMonitorIds !== []) {
                 $query->whereNotIn('id', $excludedMonitorIds);
+            }
+
+            if ($maxTimeoutMs !== null) {
+                $query->where('timeout_ms', '<', $maxTimeoutMs);
             }
 
             if (DB::connection()->getDriverName() === 'mysql') {
@@ -65,10 +74,13 @@ final class DueMonitorClaimer
                     ->whereKey($candidate->id)
                     ->where('enabled', true)
                     ->whereNotNull('next_check_at')
-                    ->where('next_check_at', '<=', $nowFormatted)
+                    ->where('next_check_at', '<', $nowFormatted)
                     ->where(function ($q) use ($nowFormatted) {
                         $q->whereNull('claim_token')
                             ->orWhere('claim_expires_at', '<', $nowFormatted);
+                    })
+                    ->when($maxTimeoutMs !== null, function ($query) use ($maxTimeoutMs) {
+                        $query->where('timeout_ms', '<', $maxTimeoutMs);
                     })
                     ->update([
                         'claim_token' => $claimToken,

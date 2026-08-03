@@ -40,6 +40,11 @@ final class TickBudget
         return ! $this->canClaimMore();
     }
 
+    public function remainingSeconds(): float
+    {
+        return max(0.0, $this->limitSeconds - $this->elapsedSeconds());
+    }
+
     public function elapsedSeconds(): float
     {
         $now = ($this->now ?? static fn (): float => microtime(true))();
