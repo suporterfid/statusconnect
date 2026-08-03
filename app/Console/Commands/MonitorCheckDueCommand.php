@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Application\Scheduling\SequentialMonitorCheckRunner;
+use App\Application\Scheduling\ParallelMonitorCheckRunner;
 use Illuminate\Console\Command;
 
 final class MonitorCheckDueCommand extends Command
@@ -11,7 +11,7 @@ final class MonitorCheckDueCommand extends Command
 
     protected $description = 'Claim and execute due monitor checks within the tick budget';
 
-    public function handle(SequentialMonitorCheckRunner $runner): int
+    public function handle(ParallelMonitorCheckRunner $runner): int
     {
         $stats = $runner->run();
 

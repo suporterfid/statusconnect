@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Domain\Outbound\DnsResolverInterface;
 use App\Domain\Outbound\OutboundPolicy;
 use App\Domain\Outbound\OutboundPolicyConfig;
+use App\Domain\Outbound\IpClassifier;
+use App\Domain\Outbound\TcpTargetValidator;
 use App\Domain\Shared\Clock;
 use App\Domain\Shared\SystemClock;
 use App\Infrastructure\Dns\SystemDnsResolver;
@@ -27,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
             return OutboundPolicy::fromConfig(
                 OutboundPolicyConfig::fromArray(config('outbound', [])),
                 $app->make(DnsResolverInterface::class),
+            );
+        });
+        $this->app->singleton(TcpTargetValidator::class, function ($app): TcpTargetValidator {
+            return new TcpTargetValidator(
+                $app->make(DnsResolverInterface::class),
+                new IpClassifier((array) config('outbound.metadata_ips', [])),
+                (array) config('outbound.allowed_ports', [80, 443]),
             );
         });
 
