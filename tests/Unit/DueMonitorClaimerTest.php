@@ -187,6 +187,25 @@ class DueMonitorClaimerTest extends TestCase
         $this->assertCount(0, $this->claimer->claimDueMonitors());
     }
 
+    public function test_claims_a_due_monitor_when_its_claim_token_is_null_even_with_a_future_expiry(): void
+    {
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Null Token Future Expiry',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:59:00 UTC'),
+            'claim_token' => null,
+            'claim_expires_at' => new DateTimeImmutable('2026-08-03 12:05:00 UTC'),
+        ]);
+
+        $claimed = $this->claimer->claimDueMonitors();
+
+        $this->assertSame($monitor->id, $claimed->sole()->id);
+    }
+
     public function test_overlapping_claim_attempts_do_not_double_claim_a_monitor(): void
     {
         Monitor::query()->create([

@@ -72,6 +72,7 @@ class SequentialMonitorCheckRunnerTest extends TestCase
         $stats = app(SequentialMonitorCheckRunner::class)->run($budget);
 
         $this->assertSame(0, $stats['claimed']);
+        $this->assertTrue($stats['budget_stopped']);
         $this->assertNull($monitor->fresh()->claim_token);
         $this->assertSame(0, DB::table('check_results')->where('monitor_id', $monitor->id)->count());
     }

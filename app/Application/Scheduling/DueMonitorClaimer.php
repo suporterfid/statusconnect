@@ -44,7 +44,7 @@ final class DueMonitorClaimer
                 ->whereNotNull('next_check_at')
                 ->where('next_check_at', '<=', $nowFormatted)
                 ->where(function ($q) use ($nowFormatted) {
-                    $q->whereNull('claim_expires_at')
+                    $q->whereNull('claim_token')
                         ->orWhere('claim_expires_at', '<', $nowFormatted);
                 })
                 ->orderBy('next_check_at')

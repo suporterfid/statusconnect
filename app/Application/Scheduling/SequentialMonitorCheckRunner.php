@@ -21,10 +21,12 @@ final class SequentialMonitorCheckRunner
         $executed = 0;
         $claimedMonitorIds = [];
         $executionReserveSeconds = max(0, (int) config('scheduler.execution_reserve_seconds', 1));
+        $budgetStopped = false;
 
         while ($budget->canClaimMore()) {
             $maxTimeoutSeconds = (int) floor($budget->remainingSeconds() - $executionReserveSeconds);
             if ($maxTimeoutSeconds <= 0) {
+                $budgetStopped = true;
                 break;
             }
 
@@ -44,6 +46,7 @@ final class SequentialMonitorCheckRunner
             $timeoutSeconds = (int) ceil($monitor->timeout_ms / 1000);
             if ($budget->remainingSeconds() <= $timeoutSeconds + $executionReserveSeconds) {
                 $this->claimer->releaseClaim($monitor);
+                $budgetStopped = true;
 
                 break;
             }
@@ -53,7 +56,7 @@ final class SequentialMonitorCheckRunner
             }
         }
 
-        $budgetStopped = $budget->exhausted();
+        $budgetStopped = $budgetStopped || $budget->exhausted();
         $this->heartbeatWriter->record('checker', [
             'claimed' => $claimed,
             'executed' => $executed,
