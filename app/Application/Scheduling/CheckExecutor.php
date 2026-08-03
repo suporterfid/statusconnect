@@ -138,6 +138,9 @@ class CheckExecutor
 
     public function outcomeFromHttpResponse(PinnedHttpResponse $response, int $latencyMs): CheckOutcome
     {
+        if ($response->transportError !== null && str_starts_with($response->transportError, 'blocked:')) {
+            return CheckOutcome::blocked(substr($response->transportError, 8));
+        }
         return $response->transportError !== null
             ? CheckOutcome::transportError($response->transportError, $latencyMs)
             : new CheckOutcome(statusCode: $response->statusCode, latencyMs: $latencyMs, headers: $response->headers, body: $response->bodyTruncated);

@@ -65,13 +65,17 @@ final class ParallelMonitorCheckRunner
                 if ($prepared instanceof CheckOutcome) { $blocked[] = [$monitor, $prepared]; continue; }
                 $requests[] = new MultiPinnedHttpRequest($monitor->id, $prepared);
             }
+            $tcpBatch = $this->tcpProbe instanceof \App\Infrastructure\Tcp\StreamSelectPinnedTcpProbe
+                ? $this->tcpProbe->start($tcpRequests)
+                : null;
             foreach ($blocked as [$monitor, $outcome]) if ($this->executor->persist($monitor, $outcome) !== null) $executed++;
             $byId = $wave->keyBy('id');
             foreach ($this->httpProbe->probe($requests) as $result) {
                 $monitor = $byId->get($result->monitorId);
                 if ($monitor !== null && $this->executor->persist($monitor, $this->executor->outcomeFromHttpResponse($result->response, $result->latencyMs)) !== null) $executed++;
             }
-            foreach ($this->tcpProbe->probe($tcpRequests) as $result) {
+            $tcpResults = $tcpBatch === null ? $this->tcpProbe->probe($tcpRequests) : $this->tcpProbe->finish($tcpBatch, hrtime(true) + ((int) floor($budget->remainingSeconds() * 1_000_000_000)));
+            foreach ($tcpResults as $result) {
                 $monitor = $byId->get($result->monitorId);
                 $outcome = $result->connected
                     ? new CheckOutcome(statusCode: 200, latencyMs: $result->latencyMs)

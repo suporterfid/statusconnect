@@ -3,6 +3,7 @@
 namespace App\Infrastructure\HttpClient;
 
 use App\Domain\Outbound\OutboundPolicy;
+use App\Domain\Outbound\OutboundPolicyViolation;
 use App\Domain\Outbound\ValidatedEndpoint;
 
 final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
@@ -20,7 +21,7 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
 
         return [
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_RESOLVE => [sprintf('%s:%d:%s', $endpoint->host, $endpoint->port, $endpoint->pinnedIp)],
+            CURLOPT_RESOLVE => [sprintf('%s:%d:%s', $endpoint->host, $endpoint->port, self::formatIp($endpoint->pinnedIp))],
         ];
     }
 
@@ -53,10 +54,12 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
                 curl_multi_remove_handle($multi, $handle);
                 curl_close($handle);
 
-                if ($context['request']->followRedirects
-                    && $this->isRedirect($response->statusCode)
-                    && $this->addRedirectHandle($multi, $contexts, $context, $response)) {
-                    continue;
+                if ($context['request']->followRedirects && $this->isRedirect($response->statusCode)) {
+                    $redirectResult = $this->addRedirectHandle($multi, $contexts, $context, $response);
+                    if ($redirectResult === null) {
+                        continue;
+                    }
+                    $response = $redirectResult;
                 }
 
                 $results[] = new MultiPinnedHttpResult(
@@ -79,7 +82,7 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
     /**
      * @param  array<int, array{monitorId: int, request: PinnedHttpRequest, startedAt: int, body: string, bodyTruncated: bool, headers: array<string, list<string>>, redirectCount: int}>  $contexts
      */
-    private function addHandle(\CurlMultiHandle $multi, array &$contexts, MultiPinnedHttpRequest $multiRequest, int $redirectCount): void
+    private function addHandle(\CurlMultiHandle $multi, array &$contexts, MultiPinnedHttpRequest $multiRequest, int $redirectCount, ?int $startedAt = null, ?int $deadline = null): void
     {
         $request = $multiRequest->request;
         $config = $this->policy->config();
@@ -87,6 +90,12 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
         $connectTimeout = $request->connectTimeout ?? $profile->connectTimeout ?? $config->connectTimeout;
         $totalTimeout = $request->totalTimeout ?? $profile->totalTimeout ?? $config->totalTimeout;
         $bodyLimit = $request->responseBodyLimit ?? $profile->responseBodyLimit ?? $config->responseBodyLimit;
+        $startedAt ??= hrtime(true);
+        $deadline ??= $startedAt + ($totalTimeout * 1_000_000_000);
+        $remainingSeconds = (int) ceil(max(0, $deadline - hrtime(true)) / 1_000_000_000);
+        if ($remainingSeconds < 1) {
+            return;
+        }
         $body = '';
         $bodyTruncated = false;
         $headers = [];
@@ -96,7 +105,7 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
             CURLOPT_CUSTOMREQUEST => $request->method,
             CURLOPT_HTTPHEADER => $this->formatHeaders($this->policy->sanitizeHeaders($request->headers)),
             CURLOPT_CONNECTTIMEOUT => $connectTimeout,
-            CURLOPT_TIMEOUT => $totalTimeout,
+            CURLOPT_TIMEOUT => min($totalTimeout, $remainingSeconds),
             CURLOPT_SSL_VERIFYPEER => $request->verifyTls,
             CURLOPT_SSL_VERIFYHOST => $request->verifyTls ? 2 : 0,
             CURLOPT_WRITEFUNCTION => static function (\CurlHandle $handle, string $chunk) use (&$body, &$bodyTruncated, $bodyLimit): int {
@@ -127,7 +136,8 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
         $contexts[spl_object_id($handle)] = [
             'monitorId' => $multiRequest->monitorId,
             'request' => $request,
-            'startedAt' => hrtime(true),
+            'startedAt' => $startedAt,
+            'deadline' => $deadline,
             'body' => &$body,
             'bodyTruncated' => &$bodyTruncated,
             'headers' => &$headers,
@@ -158,7 +168,7 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
      * @param  array<int, array{monitorId: int, request: PinnedHttpRequest, startedAt: int, body: string, bodyTruncated: bool, headers: array<string, list<string>>, redirectCount: int}>  $contexts
      * @param  array{monitorId: int, request: PinnedHttpRequest, startedAt: int, body: string, bodyTruncated: bool, headers: array<string, list<string>>, redirectCount: int}  $context
      */
-    private function addRedirectHandle(\CurlMultiHandle $multi, array &$contexts, array $context, PinnedHttpResponse $response): bool
+    private function addRedirectHandle(\CurlMultiHandle $multi, array &$contexts, array $context, PinnedHttpResponse $response): ?PinnedHttpResponse
     {
         $config = $this->policy->config();
         $profile = $config->profile($context['request']->egressProfile);
@@ -166,14 +176,17 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
         $location = $this->redirectLocation($context['request']->endpoint->url, $response);
 
         if ($context['redirectCount'] >= $redirectLimit || $location === null) {
-            return false;
+            return $response;
         }
-
-        $endpoint = $this->selectPinnedEndpoint($this->policy->validateUrl(
-            $location,
-            $context['request']->additionalAllowHosts,
-            $context['request']->egressProfile,
-        ));
+        try {
+            $endpoint = $this->selectPinnedEndpoint($this->policy->validateUrl($location, $context['request']->additionalAllowHosts, $context['request']->egressProfile));
+        } catch (OutboundPolicyViolation $violation) {
+            return new PinnedHttpResponse(0, [], '', hash('sha256', ''), false, $location, $context['redirectCount'], 'blocked:'.$violation->reasonCode);
+        }
+        $remainingSeconds = (int) ceil(max(0, $context['deadline'] - hrtime(true)) / 1_000_000_000);
+        if ($remainingSeconds < 1) {
+            return new PinnedHttpResponse(0, [], '', hash('sha256', ''), false, $location, $context['redirectCount'], 'curl_timeout');
+        }
         $request = new PinnedHttpRequest(
             method: $context['request']->method,
             endpoint: $endpoint,
@@ -182,14 +195,14 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
             verifyTls: $context['request']->verifyTls,
             followRedirects: $context['request']->followRedirects,
             connectTimeout: $context['request']->connectTimeout,
-            totalTimeout: $context['request']->totalTimeout,
+            totalTimeout: min($context['request']->totalTimeout ?? $remainingSeconds, $remainingSeconds),
             responseBodyLimit: $context['request']->responseBodyLimit,
             additionalAllowHosts: $context['request']->additionalAllowHosts,
             egressProfile: $context['request']->egressProfile,
         );
-        $this->addHandle($multi, $contexts, new MultiPinnedHttpRequest($context['monitorId'], $request), $context['redirectCount'] + 1);
+        $this->addHandle($multi, $contexts, new MultiPinnedHttpRequest($context['monitorId'], $request), $context['redirectCount'] + 1, $context['startedAt'], $context['deadline']);
 
-        return true;
+        return null;
     }
 
     private function isRedirect(int $statusCode): bool
@@ -212,7 +225,13 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
         }
         $prefix = sprintf('%s://%s%s', $base['scheme'], $base['host'], isset($base['port']) ? ':'.$base['port'] : '');
 
-        return str_starts_with($location, '/') ? $prefix.$location : $prefix.'/'.ltrim($location, '/');
+        if (str_starts_with($location, '/')) {
+            return $prefix.$location;
+        }
+        $path = $base['path'] ?? '/';
+        $directory = str_contains($path, '/') ? substr($path, 0, (int) strrpos($path, '/') + 1) : '/';
+
+        return $prefix.$directory.$location;
     }
 
     private function selectPinnedEndpoint(ValidatedEndpoint $validated): ValidatedEndpoint
@@ -242,5 +261,10 @@ final class CurlMultiPinnedProbe implements MultiPinnedHttpProbe
         }
 
         return $formatted;
+    }
+
+    private static function formatIp(string $ip): string
+    {
+        return str_contains($ip, ':') ? "[{$ip}]" : $ip;
     }
 }

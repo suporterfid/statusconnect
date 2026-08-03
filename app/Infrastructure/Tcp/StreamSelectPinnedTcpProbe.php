@@ -10,13 +10,18 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
      */
     public function probe(array $requests): array
     {
-        $pending = [];
-        $results = [];
+        return $this->finish($this->start($requests));
+    }
+
+    /** @param list<PinnedTcpRequest> $requests */
+    public function start(array $requests): PendingTcpBatch
+    {
+        $batch = new PendingTcpBatch();
 
         foreach ($requests as $request) {
             $startedAt = hrtime(true);
             $socket = @stream_socket_client(
-                sprintf('tcp://%s:%d', $request->endpoint->pinnedIp, $request->endpoint->port),
+                sprintf('tcp://%s:%d', str_contains($request->endpoint->pinnedIp, ':') ? "[{$request->endpoint->pinnedIp}]" : $request->endpoint->pinnedIp, $request->endpoint->port),
                 $errorCode,
                 $errorMessage,
                 0,
@@ -24,12 +29,12 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
             );
 
             if ($socket === false) {
-                $results[] = new PinnedTcpResult($request->monitorId, false, 0, $errorMessage ?: "tcp_connect_error_{$errorCode}");
+                $batch->results[] = new PinnedTcpResult($request->monitorId, false, 0, $errorMessage ?: "tcp_connect_error_{$errorCode}");
                 continue;
             }
 
             stream_set_blocking($socket, false);
-            $pending[(int) $socket] = [
+            $batch->pending[(int) $socket] = [
                 'socket' => $socket,
                 'request' => $request,
                 'startedAt' => $startedAt,
@@ -37,13 +42,19 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
             ];
         }
 
-        while ($pending !== []) {
+        return $batch;
+    }
+
+    public function finish(PendingTcpBatch $batch, ?int $deadline = null): array
+    {
+        while ($batch->pending !== []) {
             $now = hrtime(true);
-            $nearestDeadline = min(array_column($pending, 'deadline'));
+            $nearestDeadline = min(array_column($batch->pending, 'deadline'));
+            if ($deadline !== null) $nearestDeadline = min($nearestDeadline, $deadline);
             $remainingNs = max(0, $nearestDeadline - $now);
             $seconds = intdiv($remainingNs, 1_000_000_000);
             $microseconds = intdiv($remainingNs % 1_000_000_000, 1_000);
-            $write = array_column($pending, 'socket');
+            $write = array_column($batch->pending, 'socket');
             $read = [];
             $except = [];
             $selected = @stream_select($read, $write, $except, $seconds, $microseconds);
@@ -51,14 +62,14 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
             if ($selected !== false && $selected > 0) {
                 foreach ($write as $socket) {
                     $key = (int) $socket;
-                    if (! isset($pending[$key])) {
+                    if (! isset($batch->pending[$key])) {
                         continue;
                     }
-                    $item = $pending[$key];
+                    $item = $batch->pending[$key];
                     $connected = stream_socket_get_name($socket, true) !== false;
                     fclose($socket);
-                    unset($pending[$key]);
-                    $results[] = new PinnedTcpResult(
+                    unset($batch->pending[$key]);
+                    $batch->results[] = new PinnedTcpResult(
                         $item['request']->monitorId,
                         $connected,
                         (int) round((hrtime(true) - $item['startedAt']) / 1_000_000),
@@ -68,13 +79,13 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
             }
 
             $now = hrtime(true);
-            foreach ($pending as $key => $item) {
-                if ($item['deadline'] > $now) {
+            foreach ($batch->pending as $key => $item) {
+                if ($item['deadline'] > $now && ($deadline === null || $deadline > $now)) {
                     continue;
                 }
                 fclose($item['socket']);
-                unset($pending[$key]);
-                $results[] = new PinnedTcpResult(
+                unset($batch->pending[$key]);
+                $batch->results[] = new PinnedTcpResult(
                     $item['request']->monitorId,
                     false,
                     (int) round(($now - $item['startedAt']) / 1_000_000),
@@ -83,6 +94,6 @@ final class StreamSelectPinnedTcpProbe implements PinnedTcpProbe
             }
         }
 
-        return $results;
+        return $batch->results;
     }
 }
