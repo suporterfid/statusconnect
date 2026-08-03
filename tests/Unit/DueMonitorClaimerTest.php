@@ -1,0 +1,118 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Application\Scheduling\DueMonitorClaimer;
+use App\Domain\Shared\FrozenClock;
+use App\Infrastructure\Persistence\Eloquent\Environment;
+use App\Infrastructure\Persistence\Eloquent\Monitor;
+use App\Infrastructure\Persistence\Eloquent\Tenant;
+use App\Infrastructure\Persistence\Eloquent\User;
+use DateTimeImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class DueMonitorClaimerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Tenant $tenant;
+
+    private Environment $environment;
+
+    private FrozenClock $clock;
+
+    private DueMonitorClaimer $claimer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $user = User::factory()->create();
+        $this->tenant = Tenant::query()->create([
+            'name' => 'Acme Corp',
+            'slug' => 'acme-corp',
+        ]);
+        $this->environment = Environment::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'production',
+            'slug' => 'production',
+            'is_default' => true,
+        ]);
+
+        $this->clock = new FrozenClock(new DateTimeImmutable('2026-08-03 12:00:00 UTC'));
+        $this->claimer = new DueMonitorClaimer($this->clock);
+    }
+
+    public function test_claims_due_monitors_atomically(): void
+    {
+        // 1. Due monitor (next_check_at <= now)
+        $dueMonitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Due Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:59:00 UTC'),
+        ]);
+
+        // 2. Future monitor (next_check_at > now)
+        Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Future Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 12:05:00 UTC'),
+        ]);
+
+        $claimed = $this->claimer->claimDueMonitors(limit: 50, leaseSeconds: 60);
+
+        $this->assertCount(1, $claimed);
+        $this->assertEquals($dueMonitor->id, $claimed->first()->id);
+        $this->assertNotNull($claimed->first()->claim_token);
+        $this->assertEquals('2026-08-03 12:01:00', $claimed->first()->claim_expires_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_skips_active_claimed_monitors_within_lease(): void
+    {
+        Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Claimed Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:59:00 UTC'),
+            'claim_token' => 'active_lease_token',
+            'claim_expires_at' => new DateTimeImmutable('2026-08-03 12:05:00 UTC'), // expires in future
+        ]);
+
+        $claimed = $this->claimer->claimDueMonitors();
+
+        $this->assertCount(0, $claimed);
+    }
+
+    public function test_reclaims_stale_expired_lease_monitors(): void
+    {
+        $staleMonitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Stale Lease Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:50:00 UTC'),
+            'claim_token' => 'old_expired_token',
+            'claim_expires_at' => new DateTimeImmutable('2026-08-03 11:55:00 UTC'), // expired in past
+        ]);
+
+        $claimed = $this->claimer->claimDueMonitors();
+
+        $this->assertCount(1, $claimed);
+        $this->assertEquals($staleMonitor->id, $claimed->first()->id);
+        $this->assertNotEquals('old_expired_token', $claimed->first()->claim_token);
+    }
+}
