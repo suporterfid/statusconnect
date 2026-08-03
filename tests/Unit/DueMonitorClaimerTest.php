@@ -68,12 +68,70 @@ class DueMonitorClaimerTest extends TestCase
             'next_check_at' => new DateTimeImmutable('2026-08-03 12:05:00 UTC'),
         ]);
 
-        $claimed = $this->claimer->claimDueMonitors(limit: 50, leaseSeconds: 60);
+        $claimed = $this->claimer->claimDueMonitors(limit: 50);
 
         $this->assertCount(1, $claimed);
         $this->assertEquals($dueMonitor->id, $claimed->first()->id);
         $this->assertNotNull($claimed->first()->claim_token);
-        $this->assertEquals('2026-08-03 12:01:00', $claimed->first()->claim_expires_at->format('Y-m-d H:i:s'));
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            $claimed->first()->claim_token,
+        );
+        $this->assertEquals('2026-08-03 12:05:00', $claimed->first()->claim_expires_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_claim_advances_next_check_at_from_the_previous_phase(): void
+    {
+        $this->clock = new FrozenClock(new DateTimeImmutable('2026-08-03 12:00:30 UTC'));
+        $this->claimer = new DueMonitorClaimer($this->clock);
+
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Phase Preserving Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'interval_seconds' => 60,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 12:00:00 UTC'),
+        ]);
+
+        $this->claimer->claimDueMonitors();
+
+        $this->assertSame('2026-08-03 12:01:00', $monitor->fresh()->next_check_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_late_claim_does_not_backfill_missed_intervals(): void
+    {
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Late Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'interval_seconds' => 60,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:00:00 UTC'),
+        ]);
+
+        $this->claimer->claimDueMonitors();
+
+        $this->assertSame('2026-08-03 12:00:00', $monitor->fresh()->next_check_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_does_not_claim_a_monitor_without_a_scheduled_next_check_at(): void
+    {
+        Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Awaiting Schedule',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => null,
+        ]);
+
+        $this->assertCount(0, $this->claimer->claimDueMonitors());
     }
 
     public function test_skips_active_claimed_monitors_within_lease(): void
@@ -93,6 +151,25 @@ class DueMonitorClaimerTest extends TestCase
         $claimed = $this->claimer->claimDueMonitors();
 
         $this->assertCount(0, $claimed);
+    }
+
+    public function test_overlapping_claim_attempts_do_not_double_claim_a_monitor(): void
+    {
+        Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Contended Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8095/status/200',
+            'enabled' => true,
+            'next_check_at' => new DateTimeImmutable('2026-08-03 11:59:00 UTC'),
+        ]);
+
+        $firstClaim = $this->claimer->claimDueMonitors(limit: 1);
+        $secondClaim = (new DueMonitorClaimer($this->clock))->claimDueMonitors(limit: 1);
+
+        $this->assertCount(1, $firstClaim);
+        $this->assertCount(0, $secondClaim);
     }
 
     public function test_reclaims_stale_expired_lease_monitors(): void

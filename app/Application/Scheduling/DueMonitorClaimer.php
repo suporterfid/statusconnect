@@ -4,11 +4,12 @@ namespace App\Application\Scheduling;
 
 use App\Domain\Shared\Clock;
 use App\Infrastructure\Persistence\Eloquent\Monitor;
+use DateTimeImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class DueMonitorClaimer
+final class DueMonitorClaimer
 {
     public function __construct(
         private readonly Clock $clock,
@@ -18,47 +19,83 @@ class DueMonitorClaimer
     /**
      * @return Collection<int, Monitor>
      */
-    public function claimDueMonitors(int $limit = 50, int $leaseSeconds = 60): Collection
+    /**
+     * @param  list<int>  $excludedMonitorIds
+     */
+    public function claimDueMonitors(int $limit = 50, ?int $leaseSeconds = null, array $excludedMonitorIds = []): Collection
     {
         $now = $this->clock->nowUtc();
-        $claimToken = Str::random(32);
+        $leaseSeconds ??= max(1, (int) config('scheduler.claim_ttl_minutes', 5)) * 60;
         $claimExpiresAt = $now->modify("+{$leaseSeconds} seconds");
 
-        return DB::transaction(function () use ($now, $claimToken, $claimExpiresAt, $limit) {
+        return DB::transaction(function () use ($now, $claimExpiresAt, $limit, $excludedMonitorIds) {
             $nowFormatted = $now->format('Y-m-d H:i:s');
 
-            $dueIds = Monitor::query()
+            // Mirrors taskconnect app/Application/Scheduling/DueTaskClaimer.php.
+            $query = Monitor::query()
                 ->where('enabled', true)
-                ->where(function ($q) use ($nowFormatted) {
-                    $q->whereNull('next_check_at')
-                        ->orWhere('next_check_at', '<=', $nowFormatted);
-                })
+                ->whereNotNull('next_check_at')
+                ->where('next_check_at', '<=', $nowFormatted)
                 ->where(function ($q) use ($nowFormatted) {
                     $q->whereNull('claim_expires_at')
                         ->orWhere('claim_expires_at', '<=', $nowFormatted);
                 })
-                ->orderByRaw('CASE WHEN next_check_at IS NULL THEN 0 ELSE 1 END, next_check_at ASC')
-                ->limit($limit)
-                ->pluck('id')
-                ->toArray();
+                ->orderBy('next_check_at')
+                ->limit($limit);
 
-            if ($dueIds === []) {
-                return new Collection();
+            if ($excludedMonitorIds !== []) {
+                $query->whereNotIn('id', $excludedMonitorIds);
             }
 
-            Monitor::query()
-                ->whereIn('id', $dueIds)
-                ->update([
-                    'claim_token' => $claimToken,
-                    'claimed_at' => $now,
-                    'claim_expires_at' => $claimExpiresAt,
-                ]);
+            if (DB::connection()->getDriverName() === 'mysql') {
+                $query->lock('FOR UPDATE SKIP LOCKED');
+            } else {
+                // SQLite has no SKIP LOCKED; its transaction lock is the portable test fallback.
+                $query->lockForUpdate();
+            }
 
-            return Monitor::query()
-                ->whereIn('id', $dueIds)
-                ->where('claim_token', $claimToken)
-                ->with(['assertions', 'tenant', 'environment'])
-                ->get();
+            $candidates = $query->get();
+
+            $claimed = new Collection();
+            foreach ($candidates as $candidate) {
+                $claimToken = (string) Str::uuid();
+                $nextCheckAt = $this->nextCheckAt($candidate, $now);
+
+                $updated = Monitor::query()
+                    ->whereKey($candidate->id)
+                    ->where('enabled', true)
+                    ->whereNotNull('next_check_at')
+                    ->where('next_check_at', '<=', $nowFormatted)
+                    ->where(function ($q) use ($nowFormatted) {
+                        $q->whereNull('claim_token')
+                            ->orWhere('claim_expires_at', '<', $nowFormatted);
+                    })
+                    ->update([
+                        'claim_token' => $claimToken,
+                        'claimed_at' => $now->format('Y-m-d H:i:s'),
+                        'claim_expires_at' => $claimExpiresAt->format('Y-m-d H:i:s'),
+                        'next_check_at' => $nextCheckAt->format('Y-m-d H:i:s'),
+                    ]);
+
+                if ($updated === 0) {
+                    continue;
+                }
+
+                $candidate->refresh();
+                $claimed->push($candidate->load(['assertions', 'tenant', 'environment']));
+            }
+
+            return $claimed;
         });
+    }
+
+    private function nextCheckAt(Monitor $monitor, DateTimeImmutable $now): DateTimeImmutable
+    {
+        $previous = $monitor->next_check_at === null
+            ? $now
+            : DateTimeImmutable::createFromInterface($monitor->next_check_at);
+        $nextFromPreviousPhase = $previous->modify(sprintf('+%d seconds', $monitor->interval_seconds));
+
+        return $nextFromPreviousPhase > $now ? $nextFromPreviousPhase : $now;
     }
 }

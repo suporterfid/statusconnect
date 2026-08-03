@@ -67,14 +67,11 @@ class CheckExecutor
                 ? $monitor->consecutive_successes + 1
                 : 0;
 
-            $nextCheckAt = $now->modify("+{$monitor->interval_seconds} seconds");
-
             $monitor->update([
                 'current_state' => $state,
                 'consecutive_failures' => $consecutiveFailures,
                 'consecutive_successes' => $consecutiveSuccesses,
                 'last_checked_at' => $now,
-                'next_check_at' => $nextCheckAt,
                 'last_latency_ms' => $outcome->latencyMs,
                 'claim_token' => null,
                 'claimed_at' => null,

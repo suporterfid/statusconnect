@@ -33,21 +33,21 @@
 - Consumes: `DueMonitorClaimer::claimNext(): ?Monitor`, `Clock`, monitor persistence.
 - Produces: executable specifications for claim atomicity, claim-time interval drift, budget stopping, and heartbeat/recovery behavior.
 
-- [ ] **Step 1: Write the claimer regression tests**
+- [x] **Step 1: Write the claimer regression tests**
 
 Assert that a first call leases one due monitor and a second claimer gets no result; assert its `next_check_at` is `12:01:00` when a monitor previously due at `12:00:00` has a 60-second interval and the clock is `12:00:30`; assert a monitor last due at `11:00:00` advances to `12:00:30`, not a sequence of backfilled runs.
 
-- [ ] **Step 2: Run only the claimer tests and verify they fail**
+- [x] **Step 2: Run only the claimer tests and verify they fail**
 
 Run: `.\scripts\stc.ps1 test --filter=DueMonitorClaimerTest`
 
 Expected: FAIL because the existing bulk claimer neither exposes the single-claim contract nor advances schedule state at claim time.
 
-- [ ] **Step 3: Write budget and command behavior tests**
+- [x] **Step 3: Write budget and command behavior tests**
 
 Assert a controllable `TickBudget` becomes exhausted at its limit; assert `monitor:check-due` leaves a second due monitor unclaimed after a zero-length budget and writes `checker` heartbeat metadata with `budget_stopped: true`; assert `monitor:maintenance` clears only an expired lease and writes a `maintenance` heartbeat.
 
-- [ ] **Step 4: Run those new tests and verify they fail**
+- [x] **Step 4: Run those new tests and verify they fail**
 
 Run: `.\scripts\stc.ps1 test --filter='TickBudgetTest|MonitorCheckDueCommandTest|MonitorMaintenanceCommandTest'`
 
@@ -65,21 +65,21 @@ Expected: FAIL because the budget, commands, heartbeat model, and recovery servi
 - Consumes: `Clock::nowUtc()`, `config('scheduler.claim_ttl_minutes')`.
 - Produces: `DueMonitorClaimer::claimNext(): ?Monitor`; a claimed monitor has a UUID token, a five-minute configured lease, and an already-advanced `next_check_at`.
 
-- [ ] **Step 1: Run the failing claimer tests again**
+- [x] **Step 1: Run the failing claimer tests again**
 
 Run: `.\scripts\stc.ps1 test --filter=DueMonitorClaimerTest`
 
 Expected: the failures from Task 1 remain reproducible.
 
-- [ ] **Step 2: Add minimal scheduler config and claim implementation**
+- [x] **Step 2: Add minimal scheduler config and claim implementation**
 
 Use `target_duration_seconds=45`, `budget_safety_margin_seconds=5`, and `claim_ttl_minutes=5`. In a transaction, select candidates ordered by `next_check_at`, lock with `FOR UPDATE SKIP LOCKED` only on MySQL and `lockForUpdate()` on SQLite, then conditionally update each candidate using the same due/lease predicate. Use `(string) Str::uuid()` and update `next_check_at` with `max(now, previous_next_check_at + interval_seconds)` in that conditional update.
 
-- [ ] **Step 3: Remove completion-time rescheduling from the executor**
+- [x] **Step 3: Remove completion-time rescheduling from the executor**
 
 Keep result persistence, counters, and conditional release of the claim in `CheckExecutor`; remove its `now + interval` schedule calculation so a crashed executor cannot create drift or a hot loop.
 
-- [ ] **Step 4: Run claimer and existing executor tests**
+- [x] **Step 4: Run claimer and existing executor tests**
 
 Run: `.\scripts\stc.ps1 test --filter='DueMonitorClaimerTest|CheckExecutorTest'`
 
@@ -104,21 +104,21 @@ Expected: PASS.
 - Consumes: `Clock`, scheduler config, `DueMonitorClaimer`, `CheckExecutor`.
 - Produces: `monitor:check-due`, `monitor:maintenance`, and named `SystemHeartbeat` records.
 
-- [ ] **Step 1: Confirm the Task 1 budget/command tests fail**
+- [x] **Step 1: Confirm the Task 1 budget/command tests fail**
 
 Run: `.\scripts\stc.ps1 test --filter='TickBudgetTest|MonitorCheckDueCommandTest|MonitorMaintenanceCommandTest'`
 
 Expected: FAIL due to missing production types/commands.
 
-- [ ] **Step 2: Implement the minimal budget and heartbeat persistence**
+- [x] **Step 2: Implement the minimal budget and heartbeat persistence**
 
 Mirror the TaskConnect `TickBudget` wall-clock pattern with injectable fractional-time closure; cap the configured target by `max_execution_time - safety_margin`. Add `system_heartbeats(name unique, last_seen_at, meta_json)` and `HeartbeatWriter::record(string $name, array $meta = [])` using injected `Clock`.
 
-- [ ] **Step 3: Implement the two commands and stale lease recovery**
+- [x] **Step 3: Implement the two commands and stale lease recovery**
 
 `monitor:check-due` repeatedly calls `claimNext()` only while `TickBudget::canClaimMore()`; after each completed sequential check it records `checker` with claimed/executed counts and `budget_stopped`. `monitor:maintenance` releases at most the configured batch of monitor claims whose expiry is strictly before now, then records `maintenance` with the recovered count.
 
-- [ ] **Step 4: Run the focused command tests**
+- [x] **Step 4: Run the focused command tests**
 
 Run: `.\scripts\stc.ps1 test --filter='TickBudgetTest|MonitorCheckDueCommandTest|MonitorMaintenanceCommandTest'`
 
@@ -136,13 +136,13 @@ Expected: PASS.
 - Consumes: the completed focused tests and full suite.
 - Produces: honest issue and repository tracking evidence for the corrective PR.
 
-- [ ] **Step 1: Run the full PHPUnit suite**
+- [x] **Step 1: Run the full PHPUnit suite**
 
 Run: `.\scripts\stc.ps1 test`
 
 Expected: PASS with no failures.
 
-- [ ] **Step 2: Inspect the command registry and migration status through Docker**
+- [x] **Step 2: Inspect the command registry and migration status through Docker**
 
 Run: `.\scripts\stc.ps1 artisan list --raw` and `.\scripts\stc.ps1 artisan migrate:status`
 
