@@ -6,8 +6,13 @@ use App\Application\Scheduling\CheckExecutor;
 use App\Domain\Monitoring\AssertionOperator;
 use App\Domain\Monitoring\AssertionType;
 use App\Domain\Monitoring\CheckState;
+use App\Domain\Shared\FrozenClock;
+use App\Infrastructure\HttpClient\PinnedHttpRequest;
+use App\Infrastructure\HttpClient\PinnedHttpResponse;
+use App\Infrastructure\HttpClient\PinnedHttpTransport;
 
 use App\Infrastructure\Persistence\Eloquent\Environment;
+use App\Infrastructure\Persistence\Eloquent\CheckResult;
 use App\Infrastructure\Persistence\Eloquent\Monitor;
 use App\Infrastructure\Persistence\Eloquent\MonitorAssertion;
 use App\Infrastructure\Persistence\Eloquent\Tenant;
@@ -107,5 +112,58 @@ class CheckExecutorTest extends TestCase
         $this->assertEquals(CheckState::DOWN, $freshMonitor->current_state);
         $this->assertEquals(1, $freshMonitor->consecutive_failures);
         $this->assertEquals(0, $freshMonitor->consecutive_successes);
+    }
+
+    public function test_stale_executor_does_not_clear_a_newer_claim_or_write_a_result(): void
+    {
+        /** @var Monitor $monitor */
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Fenced Monitor',
+            'kind' => 'http',
+            'target' => 'http://target:8080/status/200',
+            'claim_token' => 'old-claim',
+            'claimed_at' => now()->subMinute(),
+            'claim_expires_at' => now()->addMinutes(5),
+        ]);
+        $transport = new class($monitor) implements PinnedHttpTransport
+        {
+            public function __construct(private readonly Monitor $monitor)
+            {
+            }
+
+            public function send(PinnedHttpRequest $request): PinnedHttpResponse
+            {
+                Monitor::query()->whereKey($this->monitor->id)->update([
+                    'claim_token' => 'new-claim',
+                    'claimed_at' => now(),
+                    'claim_expires_at' => now()->addMinutes(5),
+                ]);
+
+                return new PinnedHttpResponse(
+                    statusCode: 200,
+                    headers: [],
+                    bodyTruncated: '',
+                    bodySha256: hash('sha256', ''),
+                    bodyTruncatedFlag: false,
+                    finalUrl: $request->endpoint->url,
+                    redirectCount: 0,
+                );
+            }
+        };
+        $executor = new CheckExecutor(
+            app(\App\Domain\Outbound\OutboundPolicy::class),
+            $transport,
+            app(\App\Domain\Monitoring\AssertionEvaluator::class),
+            app(\App\Domain\Secrets\SecretRedactor::class),
+            new FrozenClock(new \DateTimeImmutable('2026-08-03 12:00:00 UTC')),
+        );
+
+        $result = $executor->execute($monitor->fresh('assertions'));
+
+        $this->assertNull($result);
+        $this->assertSame('new-claim', $monitor->fresh()->claim_token);
+        $this->assertSame(0, CheckResult::query()->where('monitor_id', $monitor->id)->count());
     }
 }
