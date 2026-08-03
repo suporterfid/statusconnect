@@ -5,7 +5,7 @@
 - [x] **PR0**: Repo scaffold & Docker loop
 - [x] **PR1**: Tenancy, auth, isolation
 - [x] **PR2**: Outbound policy port
-- [ ] **PR3**: Monitors CRUD + assertions
+- [x] **PR3**: Monitors CRUD + assertions
 - [ ] **PR4**: Scheduler core (sequential)
 - [ ] **PR5**: Parallel execution
 - [ ] **PR6**: Incident state machine
