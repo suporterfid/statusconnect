@@ -10,7 +10,7 @@ Current Phase: PR4 (Scheduler core (sequential))
 | **PR1** | Tenancy, auth, isolation | Completed | [#2](https://github.com/suporterfid/statusconnect/issues/2) | Core tables & security migrations, Eloquent models, PublicId, ApiKeyService, sc_* bearer auth, workspace scoping middleware (ResolveTenantEnvironment), tenant isolation (404), RBAC, 19 unit & feature tests passing |
 | **PR2** | Outbound policy port | Completed | [#3](https://github.com/suporterfid/statusconnect/issues/3) | OutboundPolicy, IpClassifier, UrlValidator, DnsResolver, GuzzlePinnedHttpTransport, SSRF prevention (loopback, RFC1918, metadata, IPv6 link-local blocked), 27 unit & feature tests passing |
 | **PR3** | Monitors CRUD + assertions | Completed | [#4](https://github.com/suporterfid/statusconnect/issues/4) | Monitors & assertions database migrations, Eloquent models (Monitor, MonitorAssertion), pure AssertionEvaluator engine for 7 assertion types, MonitorService, API endpoints, 39 unit & feature tests passing |
-| **PR4** | Scheduler core (sequential) | In Progress | [#5](https://github.com/suporterfid/statusconnect/issues/5) | check_results migration & model, SecretRedactor, DueMonitorClaimer, CheckExecutor, monitor:check artisan command |
+| **PR4** | Scheduler core (sequential) | Completed | [#5](https://github.com/suporterfid/statusconnect/issues/5) | check_results migration, CheckResult model, SecretRedactor, DueMonitorClaimer, CheckExecutor, monitor:check artisan command, 47 unit & feature tests passing |
 | **PR5** | Parallel execution | Pending | - | - |
 | **PR6** | Incident state machine | Pending | - | - |
 | **PR7** | Rollups & retention | Pending | - | - |

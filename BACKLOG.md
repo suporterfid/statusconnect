@@ -6,7 +6,7 @@
 - [x] **PR1**: Tenancy, auth, isolation
 - [x] **PR2**: Outbound policy port
 - [x] **PR3**: Monitors CRUD + assertions
-- [ ] **PR4**: Scheduler core (sequential)
+- [x] **PR4**: Scheduler core (sequential)
 - [ ] **PR5**: Parallel execution
 - [ ] **PR6**: Incident state machine
 - [ ] **PR7**: Rollups & retention
