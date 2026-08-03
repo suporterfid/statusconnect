@@ -12,6 +12,8 @@ use App\Infrastructure\HttpClient\GuzzlePinnedHttpTransport;
 use App\Infrastructure\HttpClient\CurlMultiPinnedProbe;
 use App\Infrastructure\HttpClient\MultiPinnedHttpProbe;
 use App\Infrastructure\HttpClient\PinnedHttpTransport;
+use App\Infrastructure\Tcp\PinnedTcpProbe;
+use App\Infrastructure\Tcp\StreamSelectPinnedTcpProbe;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PinnedHttpTransport::class, GuzzlePinnedHttpTransport::class);
         $this->app->singleton(CurlMultiPinnedProbe::class);
         $this->app->singleton(MultiPinnedHttpProbe::class, CurlMultiPinnedProbe::class);
+        $this->app->singleton(StreamSelectPinnedTcpProbe::class);
+        $this->app->singleton(PinnedTcpProbe::class, StreamSelectPinnedTcpProbe::class);
     }
 
     public function boot(): void
