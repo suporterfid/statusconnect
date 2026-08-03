@@ -9,6 +9,8 @@ use App\Domain\Shared\Clock;
 use App\Domain\Shared\SystemClock;
 use App\Infrastructure\Dns\SystemDnsResolver;
 use App\Infrastructure\HttpClient\GuzzlePinnedHttpTransport;
+use App\Infrastructure\HttpClient\CurlMultiPinnedProbe;
+use App\Infrastructure\HttpClient\MultiPinnedHttpProbe;
 use App\Infrastructure\HttpClient\PinnedHttpTransport;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(GuzzlePinnedHttpTransport::class);
         $this->app->singleton(PinnedHttpTransport::class, GuzzlePinnedHttpTransport::class);
+        $this->app->singleton(CurlMultiPinnedProbe::class);
+        $this->app->singleton(MultiPinnedHttpProbe::class, CurlMultiPinnedProbe::class);
     }
 
     public function boot(): void
