@@ -148,11 +148,11 @@ Run: `.\scripts\stc.ps1 artisan list --raw` and `.\scripts\stc.ps1 artisan migra
 
 Expected: `monitor:check-due` and `monitor:maintenance` are listed; the system-heartbeat migration has run in the development database.
 
-- [ ] **Step 3: Update tracking only with observed evidence**
+- [x] **Step 3: Update tracking only with observed evidence**
 
 Mark PR4 completed in `STATUS.md` and `BACKLOG.md` only after Step 1 passes. State that PR5 is next and remains unstarted. Add the actual test total and the verified scheduler behaviors to issue #5, then close it only after this branch's linked pull request is merged.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app config database tests STATUS.md BACKLOG.md docs
