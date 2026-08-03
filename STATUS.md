@@ -6,7 +6,7 @@ Current Phase: PR0 (Repo scaffold & Docker loop)
 
 | PR | Title | Status | Issue | Verified On / Details |
 |---|---|---|---|---|
-| **PR0** | Repo scaffold & Docker loop | In Progress | [#1](https://github.com/suporterfid/statusconnect/issues/1) | Scaffold, compose stack, stc wrapper, target service |
+| **PR0** | Repo scaffold & Docker loop | Completed | [#1](https://github.com/suporterfid/statusconnect/issues/1) | Scaffold, compose stack, stc wrapper, target mock service, PHPUnit test suite passing |
 | **PR1** | Tenancy, auth, isolation | Pending | - | - |
 | **PR2** | Outbound policy port | Pending | - | - |
 | **PR3** | Monitors CRUD + assertions | Pending | - | - |
