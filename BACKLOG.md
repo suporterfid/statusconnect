@@ -3,7 +3,7 @@
 ## Active PR Units
 
 - [x] **PR0**: Repo scaffold & Docker loop
-- [ ] **PR1**: Tenancy, auth, isolation
+- [x] **PR1**: Tenancy, auth, isolation
 - [ ] **PR2**: Outbound policy port
 - [ ] **PR3**: Monitors CRUD + assertions
 - [ ] **PR4**: Scheduler core (sequential)
