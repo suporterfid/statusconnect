@@ -6,6 +6,7 @@ use App\Application\Scheduling\CheckExecutor;
 use App\Domain\Monitoring\AssertionOperator;
 use App\Domain\Monitoring\AssertionType;
 use App\Domain\Monitoring\CheckState;
+use App\Domain\Monitoring\CheckOutcome;
 use App\Domain\Shared\FrozenClock;
 use App\Infrastructure\HttpClient\PinnedHttpRequest;
 use App\Infrastructure\HttpClient\PinnedHttpResponse;
@@ -165,5 +166,22 @@ class CheckExecutorTest extends TestCase
         $this->assertNull($result);
         $this->assertSame('new-claim', $monitor->fresh()->claim_token);
         $this->assertSame(0, CheckResult::query()->where('monitor_id', $monitor->id)->count());
+    }
+
+    public function test_persists_a_completed_outcome_with_the_monitor_claim_fence(): void
+    {
+        $monitor = Monitor::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'environment_id' => $this->environment->id,
+            'name' => 'Completed wave check',
+            'kind' => 'http',
+            'target' => 'http://target:8080/status/200',
+            'claim_token' => 'wave-claim',
+        ]);
+
+        $result = $this->executor->persist($monitor->fresh('assertions'), new CheckOutcome(statusCode: 200, latencyMs: 12));
+
+        $this->assertSame(CheckState::UP, $result->state);
+        $this->assertNull($monitor->fresh()->claim_token);
     }
 }

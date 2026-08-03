@@ -45,6 +45,13 @@ class CheckExecutor
             $outcome = new CheckOutcome(statusCode: 200, latencyMs: 10);
         }
 
+        return $this->persist($monitor, $outcome);
+    }
+
+    public function persist(Monitor $monitor, CheckOutcome $outcome): ?CheckResult
+    {
+        $now = $this->clock->nowUtc();
+        $claimToken = $monitor->claim_token;
         $assertionDefs = $monitor->assertions->map(fn ($ast) => new AssertionDefinition(
             type: $ast->type,
             operator: $ast->operator,
