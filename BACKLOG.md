@@ -22,10 +22,13 @@
 
 ## Open Questions (§23)
 
-1. **Status page hosting shape**: Path-based `/status/{slug}` for v0; custom domains deferred to post-v0.
-2. **Interval floor policy**: Minimum interval enforced at 60s.
-3. **`degraded` in uptime maths**: Fixed in v0 (excluded from downtime) and documented.
-4. **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, `status:callback` issue to be opened in `grandpasson` repo before PR13 live broker testing.
-5. **Heartbeat-only tenants**: Allowed.
-6. **Self-monitoring honesty**: Document external ping recipes and surface stale checker heartbeat on public status page.
-7. **Retention vs. host quota**: Warn when approaching database budget in v0.
+1. **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, `status:callback` issue to be opened in `grandpasson` repo before PR13 live broker testing.
+
+## Resolved Decisions
+
+- **Status page hosting shape**: Path-based `/status/{slug}` for v0; custom domains deferred to post-v0.
+- **Interval floor policy**: Minimum interval enforced at 60s.
+- **`degraded` in uptime maths**: Excluded from downtime.
+- **Heartbeat-only tenants**: Allowed.
+- **Self-monitoring honesty**: Document external ping recipes and surface stale checker heartbeat on the public status page.
+- **Retention vs. host quota**: Warn when approaching the database budget in v0.
