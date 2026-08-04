@@ -1,10 +1,20 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Auth\LoginController;
+use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\IncidentController;
+use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MonitorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::middleware(['web', 'throttle:10,1'])->post('/auth/login', LoginController::class);
+
+    Route::middleware(['web', 'auth.api_or_sanctum'])->group(function () {
+        Route::post('/auth/logout', LogoutController::class);
+        Route::get('/me', MeController::class);
+    });
+
     Route::get('/platform/health', function () {
         return response()->json([
             'status' => 'ok',
