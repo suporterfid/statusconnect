@@ -17,7 +17,7 @@
 - [ ] **PR10**: Heartbeat monitors
 - [ ] **PR11**: Maintenance windows
 - [ ] **PR12**: Operator SPA
-- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — ready to merge. The explicit administrator-managed tenant/role/group mapping is implemented, conflicting role/group resolution fails closed, and local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15). The broker scope prerequisite shipped in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117); live verification awaits operator-created registrations and credentials.
+- [x] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — merged via [PR #17](https://github.com/suporterfid/statusconnect/pull/17). The explicit administrator-managed tenant/role/group mapping is implemented, conflicting role/group resolution fails closed, and local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15). The broker scope prerequisite shipped in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117); live verification awaits operator-created registrations and credentials.
 - [ ] **PR14**: TaskConnect integration
 - [ ] **PR15**: Release & deploy
 - [ ] **PR16**: E2E & accessibility
