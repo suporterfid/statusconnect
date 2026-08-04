@@ -3,6 +3,7 @@
 namespace App\Application\Incidents;
 
 use App\Domain\Incidents\IncidentAction;
+use App\Domain\Incidents\FlapPolicy;
 use App\Domain\Incidents\IncidentStateMachine;
 use App\Domain\Incidents\MonitorSnapshot;
 use App\Domain\Incidents\MonitorTransition;
@@ -16,8 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class IncidentService
 {
-    public function __construct(private readonly IncidentStateMachine $stateMachine)
-    {
+    public function __construct(
+        private readonly IncidentStateMachine $stateMachine,
+        private readonly FlapPolicy $flapPolicy = new FlapPolicy(),
+        private readonly int $flapThreshold = 5,
+        private readonly int $flapWindowMinutes = 60,
+    ) {
     }
 
     public function record(
@@ -26,7 +31,7 @@ class IncidentService
         EvaluationResult $evaluation,
         DateTimeImmutable $checkedAt,
         ?string $failureExcerpt = null,
-    ): ?CheckResult {
+    ): ?IncidentRecord {
         $claimToken = $monitor->claim_token;
         $transition = $this->stateMachine->transition(
             new MonitorSnapshot(
@@ -81,7 +86,7 @@ class IncidentService
                 default => null,
             };
 
-            return $result;
+            return new IncidentRecord($result, $this->updateFlapping($monitor, $checkedAt));
         });
     }
 
@@ -123,5 +128,29 @@ class IncidentService
             'resolved_flag' => null,
             'duration_seconds' => max(0, $resolvedAt->getTimestamp() - $incident->started_at->getTimestamp()),
         ]);
+    }
+
+    private function updateFlapping(Monitor $monitor, DateTimeImmutable $checkedAt): bool
+    {
+        $windowStart = $checkedAt->modify(sprintf('-%d minutes', max(1, $this->flapWindowMinutes)));
+        $recentCycles = Incident::query()
+            ->where('monitor_id', $monitor->id)
+            ->where('manual', false)
+            ->whereNotNull('resolved_at')
+            ->where('resolved_at', '>=', $windowStart)
+            ->count();
+
+        if (! $this->flapPolicy->evaluate($recentCycles, max(0, $this->flapThreshold))) {
+            Monitor::query()->whereKey($monitor->id)->update(['flapping_since' => null]);
+
+            return true;
+        }
+
+        $flappingSince = Monitor::query()->whereKey($monitor->id)->value('flapping_since');
+        if ($flappingSince === null) {
+            Monitor::query()->whereKey($monitor->id)->update(['flapping_since' => $checkedAt]);
+        }
+
+        return false;
     }
 }

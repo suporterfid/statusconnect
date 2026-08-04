@@ -111,10 +111,47 @@ class IncidentServiceTest extends TestCase
         $this->assertNull($resolved->resolved_flag);
     }
 
-    private function record(CheckState $state, string $time): void
+    public function test_manual_incident_is_never_auto_resolved(): void
+    {
+        $this->monitor->update([
+            'current_state' => CheckState::DOWN,
+            'consecutive_failures' => 3,
+            'first_failure_at' => '2026-08-04 10:00:00',
+            'recovery_threshold' => 1,
+        ]);
+        $manual = Incident::query()->create([
+            'tenant_id' => $this->monitor->tenant_id,
+            'environment_id' => $this->monitor->environment_id,
+            'monitor_id' => $this->monitor->id,
+            'manual' => true,
+            'resolved_flag' => false,
+            'started_at' => '2026-08-04 10:00:00',
+            'severity' => 'major',
+            'summary' => 'Dependency incident',
+        ]);
+
+        $this->record(CheckState::UP, '10:03');
+
+        $this->assertNull($manual->fresh()->resolved_at);
+    }
+
+    public function test_more_than_five_resolved_cycles_marks_the_monitor_flapping_and_throttles_notifications(): void
+    {
+        $this->monitor->update(['confirmation_threshold' => 1, 'recovery_threshold' => 1]);
+
+        for ($cycle = 0; $cycle < 6; $cycle++) {
+            $this->record(CheckState::DOWN, sprintf('10:%02d', $cycle * 2));
+            $record = $this->record(CheckState::UP, sprintf('10:%02d', ($cycle * 2) + 1));
+        }
+
+        $this->assertNotNull($this->monitor->fresh()->flapping_since);
+        $this->assertFalse($record->notificationAllowed);
+    }
+
+    private function record(CheckState $state, string $time): mixed
     {
         $this->clock->set(new DateTimeImmutable("2026-08-04T{$time}:00Z"));
-        $this->service->record(
+        return $this->service->record(
             $this->monitor->fresh(),
             new CheckOutcome(statusCode: $state === CheckState::UP ? 200 : 500, latencyMs: 12),
             new EvaluationResult($state, $state === CheckState::UP ? null : 'Check failed'),

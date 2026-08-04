@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Application\Incidents\IncidentService;
+use App\Domain\Incidents\FlapPolicy;
+use App\Domain\Incidents\IncidentStateMachine;
 use App\Domain\Outbound\DnsResolverInterface;
 use App\Domain\Outbound\OutboundPolicy;
 use App\Domain\Outbound\OutboundPolicyConfig;
@@ -23,6 +26,14 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Clock::class, SystemClock::class);
+        $this->app->singleton(IncidentService::class, function ($app): IncidentService {
+            return new IncidentService(
+                $app->make(IncidentStateMachine::class),
+                $app->make(FlapPolicy::class),
+                (int) config('incidents.flap_threshold', 5),
+                (int) config('incidents.flap_window_minutes', 60),
+            );
+        });
         $this->app->singleton(DnsResolverInterface::class, SystemDnsResolver::class);
 
         $this->app->singleton(OutboundPolicy::class, function ($app): OutboundPolicy {

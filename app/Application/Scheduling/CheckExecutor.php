@@ -71,7 +71,7 @@ class CheckExecutor
             $failureExcerpt = $this->secretRedactor->redactString($rawExcerpt);
         }
 
-        return $this->incidentService->record($monitor, $outcome, $evalResult, $now, $failureExcerpt);
+        return $this->incidentService->record($monitor, $outcome, $evalResult, $now, $failureExcerpt)?->checkResult;
     }
 
     public function prepareHttp(Monitor $monitor): PinnedHttpRequest|CheckOutcome
