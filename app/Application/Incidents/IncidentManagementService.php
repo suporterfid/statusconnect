@@ -67,4 +67,19 @@ class IncidentManagementService
             'published_at' => $publishedAt,
         ]);
     }
+
+    public function resolve(Tenant $tenant, Environment $environment, string $incidentPublicId, DateTimeImmutable $resolvedAt): Incident
+    {
+        $incident = $this->get($tenant, $environment, $incidentPublicId);
+
+        if ($incident->resolved_at === null) {
+            $incident->update([
+                'resolved_at' => $resolvedAt,
+                'resolved_flag' => null,
+                'duration_seconds' => max(0, $resolvedAt->getTimestamp() - $incident->started_at->getTimestamp()),
+            ]);
+        }
+
+        return $incident->fresh('updates');
+    }
 }

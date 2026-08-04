@@ -137,18 +137,28 @@ class IncidentService
             ->where('monitor_id', $monitor->id)
             ->where('manual', false)
             ->whereNotNull('resolved_at')
+            ->where('started_at', '>=', $windowStart)
             ->where('resolved_at', '>=', $windowStart)
             ->count();
 
         if (! $this->flapPolicy->evaluate($recentCycles, max(0, $this->flapThreshold))) {
-            Monitor::query()->whereKey($monitor->id)->update(['flapping_since' => null]);
+            Monitor::query()->whereKey($monitor->id)->update([
+                'flapping_since' => null,
+                'flap_notification_window_started_at' => null,
+            ]);
 
             return true;
         }
 
-        $flappingSince = Monitor::query()->whereKey($monitor->id)->value('flapping_since');
-        if ($flappingSince === null) {
-            Monitor::query()->whereKey($monitor->id)->update(['flapping_since' => $checkedAt]);
+        $monitorState = Monitor::query()->whereKey($monitor->id)->firstOrFail();
+        $windowStartedAt = $monitorState->flap_notification_window_started_at?->toDateTimeImmutable();
+        if ($windowStartedAt === null || $windowStartedAt <= $windowStart) {
+            $monitorState->update([
+                'flapping_since' => $monitorState->flapping_since ?? $checkedAt,
+                'flap_notification_window_started_at' => $checkedAt,
+            ]);
+
+            return true;
         }
 
         return false;

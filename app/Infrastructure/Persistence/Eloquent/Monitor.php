@@ -54,6 +54,7 @@ class Monitor extends Model
         'heartbeat_grace_seconds',
         'last_ping_at',
         'flapping_since',
+        'flap_notification_window_started_at',
         'claim_token',
         'claimed_at',
         'claim_expires_at',
@@ -78,6 +79,7 @@ class Monitor extends Model
         'tls_expires_at' => 'datetime',
         'last_ping_at' => 'datetime',
         'flapping_since' => 'datetime',
+        'flap_notification_window_started_at' => 'datetime',
         'claimed_at' => 'datetime',
         'claim_expires_at' => 'datetime',
     ];

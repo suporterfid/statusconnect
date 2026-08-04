@@ -146,7 +146,11 @@ class IncidentServiceTest extends TestCase
         }
 
         $this->assertNotNull($this->monitor->fresh()->flapping_since);
-        $this->assertFalse($record->notificationAllowed);
+        $this->assertTrue($record->notificationAllowed);
+
+        $this->record(CheckState::DOWN, '10:12');
+        $suppressed = $this->record(CheckState::UP, '10:13');
+        $this->assertFalse($suppressed->notificationAllowed);
     }
 
     private function record(CheckState $state, string $time): mixed

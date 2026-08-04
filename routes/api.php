@@ -22,6 +22,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/incidents', [IncidentController::class, 'store']);
             Route::get('/incidents/{incidentId}', [IncidentController::class, 'show']);
             Route::post('/incidents/{incidentId}/updates', [IncidentController::class, 'storeUpdate']);
+            Route::post('/incidents/{incidentId}/resolve', [IncidentController::class, 'resolve']);
             Route::get('/monitors', [MonitorController::class, 'index']);
             Route::post('/monitors', [MonitorController::class, 'store']);
             Route::get('/monitors/{monitorId}', [MonitorController::class, 'show']);

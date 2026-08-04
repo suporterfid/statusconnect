@@ -112,4 +112,55 @@ class IncidentStateMachineTest extends TestCase
         $this->assertSame(CheckState::UP, $transition->nextState);
         $this->assertSame(IncidentAction::NONE, $transition->action);
     }
+
+    public function test_success_resets_an_unconfirmed_failure_streak(): void
+    {
+        $transition = (new IncidentStateMachine())->transition(
+            new MonitorSnapshot(CheckState::UP, 2, 0, new DateTimeImmutable('2026-08-04T10:00:00Z')),
+            CheckState::UP,
+            new DateTimeImmutable('2026-08-04T10:02:00Z'),
+            confirmationThreshold: 3,
+            recoveryThreshold: 2,
+        );
+
+        $this->assertSame(CheckState::UP, $transition->nextState);
+        $this->assertSame(0, $transition->consecutiveFailures);
+        $this->assertSame(1, $transition->consecutiveSuccesses);
+        $this->assertNull($transition->firstFailureAt);
+    }
+
+    public function test_failure_above_the_confirmation_threshold_does_not_open_a_second_incident(): void
+    {
+        $transition = (new IncidentStateMachine())->transition(
+            new MonitorSnapshot(CheckState::DOWN, 3, 0, new DateTimeImmutable('2026-08-04T10:00:00Z')),
+            CheckState::DOWN,
+            new DateTimeImmutable('2026-08-04T10:03:00Z'),
+            confirmationThreshold: 3,
+            recoveryThreshold: 2,
+        );
+
+        $this->assertSame(CheckState::DOWN, $transition->nextState);
+        $this->assertSame(4, $transition->consecutiveFailures);
+        $this->assertSame(IncidentAction::NONE, $transition->action);
+    }
+
+    public function test_skipped_paused_and_maintenance_outcomes_preserve_the_confirmed_snapshot(): void
+    {
+        $snapshot = new MonitorSnapshot(CheckState::UP, 1, 2, new DateTimeImmutable('2026-08-04T10:00:00Z'));
+
+        foreach ([CheckState::SKIPPED, CheckState::PAUSED, CheckState::MAINTENANCE] as $outcome) {
+            $transition = (new IncidentStateMachine())->transition(
+                $snapshot,
+                $outcome,
+                new DateTimeImmutable('2026-08-04T10:01:00Z'),
+                confirmationThreshold: 3,
+                recoveryThreshold: 2,
+            );
+
+            $this->assertSame(CheckState::UP, $transition->nextState);
+            $this->assertSame(1, $transition->consecutiveFailures);
+            $this->assertSame(2, $transition->consecutiveSuccesses);
+            $this->assertSame(IncidentAction::NONE, $transition->action);
+        }
+    }
 }

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->integer('confirmation_threshold')->default(3)->change();
             $table->string('current_state', 32)->default('pending')->change();
             $table->timestamp('first_failure_at')->nullable()->after('consecutive_successes');
+            $table->timestamp('flap_notification_window_started_at')->nullable()->after('flapping_since');
         });
 
         Schema::create('incidents', function (Blueprint $table) {
