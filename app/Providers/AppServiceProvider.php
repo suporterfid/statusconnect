@@ -2,21 +2,24 @@
 
 namespace App\Providers;
 
-use App\Application\Incidents\IncidentService;
+use App\Application\GrandpaSson\CachedTokenClient;
 use App\Application\GrandpaSson\HttpIntrospectionClient;
+use App\Application\GrandpaSson\HttpTokenClient;
 use App\Application\GrandpaSson\IntrospectionClientInterface;
+use App\Application\GrandpaSson\TokenClientInterface;
+use App\Application\Incidents\IncidentService;
 use App\Domain\Incidents\FlapPolicy;
 use App\Domain\Incidents\IncidentStateMachine;
 use App\Domain\Outbound\DnsResolverInterface;
+use App\Domain\Outbound\IpClassifier;
 use App\Domain\Outbound\OutboundPolicy;
 use App\Domain\Outbound\OutboundPolicyConfig;
-use App\Domain\Outbound\IpClassifier;
 use App\Domain\Outbound\TcpTargetValidator;
 use App\Domain\Shared\Clock;
 use App\Domain\Shared\SystemClock;
 use App\Infrastructure\Dns\SystemDnsResolver;
-use App\Infrastructure\HttpClient\GuzzlePinnedHttpTransport;
 use App\Infrastructure\HttpClient\CurlMultiPinnedProbe;
+use App\Infrastructure\HttpClient\GuzzlePinnedHttpTransport;
 use App\Infrastructure\HttpClient\MultiPinnedHttpProbe;
 use App\Infrastructure\HttpClient\PinnedHttpTransport;
 use App\Infrastructure\Tcp\PinnedTcpProbe;
@@ -30,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Clock::class, SystemClock::class);
         $this->app->singleton(HttpIntrospectionClient::class);
         $this->app->singleton(IntrospectionClientInterface::class, HttpIntrospectionClient::class);
+        $this->app->singleton(HttpTokenClient::class);
+        $this->app->singleton(TokenClientInterface::class, function ($app): TokenClientInterface {
+            return new CachedTokenClient($app->make(HttpTokenClient::class));
+        });
         $this->app->singleton(IncidentService::class, function ($app): IncidentService {
             return new IncidentService(
                 $app->make(IncidentStateMachine::class),

@@ -29,7 +29,7 @@
 ## Resolved Decisions
 
 - **GrandpaSSOn delegated tenancy mapping**: A platform administrator explicitly maps each broker tenant to a local StatusConnect tenant and defines `owner`/`admin`/`member` plus opaque groups to local `owner`/`admin`/`viewer` roles. Browser exchange never auto-provisions a tenant.
-- **GrandpaSSOn role/group precedence**: Conflicting mapped broker roles/groups fail closed; a mapping must resolve to exactly one local role.
+- **GrandpaSSOn role/group precedence**: A mismatch between any mapped broker role or mapped group roles fails the delegated login closed. Unmapped groups are ignored; no resolved explicit mapping also fails closed.
 - **Status page hosting shape**: Path-based `/status/{slug}` for v0; custom domains deferred to post-v0.
 - **Interval floor policy**: Minimum interval enforced at 60s.
 - **`degraded` in uptime maths**: Excluded from downtime.

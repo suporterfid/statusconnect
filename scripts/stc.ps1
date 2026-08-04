@@ -169,20 +169,22 @@ function Invoke-Npm {
 function Invoke-Test {
     param([string[]]$CommandArgs)
 
+    $testEnvArgs = @('-e', 'APP_ENV=testing', '-e', 'DB_CONNECTION=sqlite', '-e', 'DB_DATABASE=:memory:')
+
     if ((Invoke-ComposeCore 'run' '--rm' 'app' 'test' '-f' 'artisan') -eq 0) {
-        $testArgs = @('run', '--rm', 'app', 'php', 'artisan', 'test') + $CommandArgs
+        $testArgs = @('run', '--rm') + $testEnvArgs + @('app', 'php', 'artisan', 'test') + $CommandArgs
         Invoke-Compose @testArgs
         return
     }
 
     if ((Invoke-ComposeCore 'run' '--rm' 'app' 'test' '-f' 'vendor/bin/pest') -eq 0) {
-        $testArgs = @('run', '--rm', 'app', 'vendor/bin/pest') + $CommandArgs
+        $testArgs = @('run', '--rm') + $testEnvArgs + @('app', 'vendor/bin/pest') + $CommandArgs
         Invoke-Compose @testArgs
         return
     }
 
     if ((Invoke-ComposeCore 'run' '--rm' 'app' 'test' '-f' 'vendor/bin/phpunit') -eq 0) {
-        $testArgs = @('run', '--rm', 'app', 'vendor/bin/phpunit') + $CommandArgs
+        $testArgs = @('run', '--rm') + $testEnvArgs + @('app', 'vendor/bin/phpunit') + $CommandArgs
         Invoke-Compose @testArgs
         return
     }
