@@ -8,7 +8,7 @@
 - [x] **PR3**: Monitors CRUD + assertions
 - [x] **PR4**: Scheduler core (sequential)
 - [x] **PR5**: Parallel execution ([#7](https://github.com/suporterfid/statusconnect/issues/7)) — verified with a 30-monitor / 5-second fixture in 15.22s within the 45-second tick budget; PR6 is next.
-- [ ] **PR6**: Incident state machine ([#9](https://github.com/suporterfid/statusconnect/issues/9)) â€” ready for review; 98 tests / 272 assertions verified. PR7 remains blocked on PR6 merge.
+- [x] **PR6**: Incident state machine ([#9](https://github.com/suporterfid/statusconnect/issues/9)) â€” merged in [PR #10](https://github.com/suporterfid/statusconnect/pull/10); main verified with 98 tests / 272 assertions. PR7 is next.
 - [ ] **PR7**: Rollups & retention
 - [ ] **PR8**: Public status page
 - [ ] **PR9**: Notifications
