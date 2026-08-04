@@ -63,6 +63,8 @@ return new class extends Migration
         Schema::table('monitors', function (Blueprint $table) {
             $table->dropColumn('flap_notification_window_started_at');
             $table->dropColumn('first_failure_at');
+            $table->integer('confirmation_threshold')->default(2)->change();
+            $table->string('current_state', 32)->default('up')->change();
         });
 
         Schema::table('idempotency_keys', function (Blueprint $table) {
