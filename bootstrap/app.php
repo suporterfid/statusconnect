@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.api_or_sanctum' => \App\Http\Middleware\AuthenticateApiKeyOrSanctum::class,
             'tenant.context' => \App\Http\Middleware\ResolveTenantEnvironment::class,
             'grandpasson.workspace_aud' => \App\Http\Middleware\EnforceGrandpaSsonWorkspaceAud::class,
+            'public.status.throttle' => \App\Http\Middleware\EnforcePublicStatusPageRateLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
