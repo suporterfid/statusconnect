@@ -2,6 +2,7 @@
 
 namespace App\Application\Scheduling;
 
+use App\Application\Incidents\IncidentService;
 use App\Domain\Monitoring\AssertionDefinition;
 use App\Domain\Monitoring\AssertionEvaluator;
 use App\Domain\Monitoring\AssertionOperator;
@@ -19,7 +20,6 @@ use App\Infrastructure\HttpClient\PinnedHttpTransport;
 use App\Infrastructure\HttpClient\PinnedHttpResponse;
 use App\Infrastructure\Persistence\Eloquent\CheckResult;
 use App\Infrastructure\Persistence\Eloquent\Monitor;
-use Illuminate\Support\Facades\DB;
 
 class CheckExecutor
 {
@@ -31,6 +31,7 @@ class CheckExecutor
         private readonly AssertionEvaluator $assertionEvaluator,
         private readonly SecretRedactor $secretRedactor,
         private readonly Clock $clock,
+        private readonly IncidentService $incidentService,
     ) {
     }
 
@@ -64,55 +65,13 @@ class CheckExecutor
 
         $evalResult = $this->assertionEvaluator->evaluate($outcome, $assertionDefs);
 
-        return DB::transaction(function () use ($monitor, $outcome, $evalResult, $now, $claimToken) {
-            $state = $evalResult->state;
+        $failureExcerpt = null;
+        if ($evalResult->state !== CheckState::UP && $outcome->body !== '') {
+            $rawExcerpt = substr($outcome->body, 0, self::CHECK_FAILURE_EXCERPT_BYTES);
+            $failureExcerpt = $this->secretRedactor->redactString($rawExcerpt);
+        }
 
-            $consecutiveFailures = in_array($state, [CheckState::DOWN, CheckState::DEGRADED], true)
-                ? $monitor->consecutive_failures + 1
-                : 0;
-
-            $consecutiveSuccesses = $state === CheckState::UP
-                ? $monitor->consecutive_successes + 1
-                : 0;
-
-            $monitorUpdate = Monitor::query()->whereKey($monitor->id);
-            if ($claimToken !== null) {
-                $monitorUpdate->where('claim_token', $claimToken);
-            }
-
-            $updated = $monitorUpdate->update([
-                'current_state' => $state,
-                'consecutive_failures' => $consecutiveFailures,
-                'consecutive_successes' => $consecutiveSuccesses,
-                'last_checked_at' => $now,
-                'last_latency_ms' => $outcome->latencyMs,
-                'claim_token' => null,
-                'claimed_at' => null,
-                'claim_expires_at' => null,
-            ]);
-
-            if ($updated === 0) {
-                return null;
-            }
-
-            $failureExcerpt = null;
-            if ($state !== CheckState::UP && $outcome->body !== '') {
-                $rawExcerpt = substr($outcome->body, 0, self::CHECK_FAILURE_EXCERPT_BYTES);
-                $failureExcerpt = $this->secretRedactor->redactString($rawExcerpt);
-            }
-
-            return CheckResult::query()->create([
-                'tenant_id' => $monitor->tenant_id,
-                'environment_id' => $monitor->environment_id,
-                'monitor_id' => $monitor->id,
-                'state' => $state,
-                'latency_ms' => $outcome->latencyMs,
-                'status_code' => $outcome->statusCode > 0 ? $outcome->statusCode : null,
-                'failure_reason' => $evalResult->reason,
-                'failure_excerpt' => $failureExcerpt,
-                'checked_at' => $now,
-            ]);
-        });
+        return $this->incidentService->record($monitor, $outcome, $evalResult, $now, $failureExcerpt)?->checkResult;
     }
 
     public function prepareHttp(Monitor $monitor): PinnedHttpRequest|CheckOutcome

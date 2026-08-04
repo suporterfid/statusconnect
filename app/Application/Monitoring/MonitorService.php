@@ -69,7 +69,7 @@ class MonitorService
                 'request_body' => $data['request_body'] ?? null,
                 'interval_seconds' => $data['interval_seconds'] ?? 60,
                 'timeout_ms' => $data['timeout_ms'] ?? 10000,
-                'confirmation_threshold' => $data['confirmation_threshold'] ?? 2,
+                'confirmation_threshold' => $data['confirmation_threshold'] ?? 3,
                 'recovery_threshold' => $data['recovery_threshold'] ?? 2,
                 'follow_redirects' => $data['follow_redirects'] ?? true,
                 'verify_tls' => $data['verify_tls'] ?? true,

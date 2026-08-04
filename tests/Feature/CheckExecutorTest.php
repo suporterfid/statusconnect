@@ -110,7 +110,7 @@ class CheckExecutorTest extends TestCase
         $this->assertNotNull($result->failure_reason);
 
         $freshMonitor = $monitor->fresh();
-        $this->assertEquals(CheckState::DOWN, $freshMonitor->current_state);
+        $this->assertEquals(CheckState::PENDING, $freshMonitor->current_state);
         $this->assertEquals(1, $freshMonitor->consecutive_failures);
         $this->assertEquals(0, $freshMonitor->consecutive_successes);
     }
@@ -159,6 +159,7 @@ class CheckExecutorTest extends TestCase
             app(\App\Domain\Monitoring\AssertionEvaluator::class),
             app(\App\Domain\Secrets\SecretRedactor::class),
             new FrozenClock(new \DateTimeImmutable('2026-08-03 12:00:00 UTC')),
+            app(\App\Application\Incidents\IncidentService::class),
         );
 
         $result = $executor->execute($monitor->fresh('assertions'));

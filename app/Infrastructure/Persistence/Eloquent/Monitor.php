@@ -45,6 +45,7 @@ class Monitor extends Model
         'current_state',
         'consecutive_failures',
         'consecutive_successes',
+        'first_failure_at',
         'last_checked_at',
         'next_check_at',
         'last_latency_ms',
@@ -53,6 +54,7 @@ class Monitor extends Model
         'heartbeat_grace_seconds',
         'last_ping_at',
         'flapping_since',
+        'flap_notification_window_started_at',
         'claim_token',
         'claimed_at',
         'claim_expires_at',
@@ -66,12 +68,18 @@ class Monitor extends Model
         'verify_tls' => 'boolean',
         'public_safe' => 'boolean',
         'enabled' => 'boolean',
+        'confirmation_threshold' => 'integer',
+        'recovery_threshold' => 'integer',
+        'consecutive_failures' => 'integer',
+        'consecutive_successes' => 'integer',
         'paused_at' => 'datetime',
         'last_checked_at' => 'datetime',
+        'first_failure_at' => 'datetime',
         'next_check_at' => 'datetime',
         'tls_expires_at' => 'datetime',
         'last_ping_at' => 'datetime',
         'flapping_since' => 'datetime',
+        'flap_notification_window_started_at' => 'datetime',
         'claimed_at' => 'datetime',
         'claim_expires_at' => 'datetime',
     ];
@@ -89,5 +97,10 @@ class Monitor extends Model
     public function assertions(): HasMany
     {
         return $this->hasMany(MonitorAssertion::class, 'monitor_id')->orderBy('order', 'asc');
+    }
+
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(Incident::class, 'monitor_id');
     }
 }
