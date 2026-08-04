@@ -1,6 +1,6 @@
 # StatusConnect Implementation Status
 
-Current Phase: PR8 public status page is in implementation for [#20](https://github.com/suporterfid/statusconnect/issues/20).
+Current Phase: PR8 completed via [PR #21](https://github.com/suporterfid/statusconnect/pull/21): public status page snapshots. PR9 is next.
 
 ## PR Sequence Table
 
@@ -14,7 +14,7 @@ Current Phase: PR8 public status page is in implementation for [#20](https://git
 | **PR5** | Parallel execution | Completed | [#7](https://github.com/suporterfid/statusconnect/issues/7) | Bounded 10-wide waves, DNS-pinned `curl_multi` HTTP, async pinned TCP, shared wave deadlines, claim-token fenced persistence, and the parallel `monitor:check-due` path. The real 30-monitor / 5-second fixture completed in 15.22s within the 45-second budget; 77 tests / 190 assertions verified. |
 | **PR6** | Incident state machine | Completed | [#9](https://github.com/suporterfid/statusconnect/issues/9) | Merged via [PR #10](https://github.com/suporterfid/statusconnect/pull/10): pure confirmation/recovery transitions, transactional lifecycle, one-open-incident constraint, persisted flap suppression, and environment-scoped/idempotent incident API. Main verified with 98 tests / 272 assertions. PR7 is next. |
 | **PR7** | Rollups & retention | Completed | [#18](https://github.com/suporterfid/statusconnect/issues/18) | Merged via [PR #19](https://github.com/suporterfid/statusconnect/pull/19): closed hourly/daily rollups, idempotent upserts, and retention gated on daily coverage. |
-| **PR8** | Public status page | In progress | [#20](https://github.com/suporterfid/statusconnect/issues/20) | Blade/JSON snapshot serving, ETag/304, MySQL IP limiting, and disclosure coverage are under verification. |
+| **PR8** | Public status page | Completed | [#20](https://github.com/suporterfid/statusconnect/issues/20) | Merged via [PR #21](https://github.com/suporterfid/statusconnect/pull/21): cached Blade/JSON snapshots, ETag/304, MySQL IP limiting, privacy disclosure coverage, and locale/timezone presentation. Verified with 134 tests / 392 assertions. |
 | **PR9** | Notifications | Pending | - | - |
 | **PR10** | Heartbeat monitors | Pending | - | - |
 | **PR11** | Maintenance windows | Pending | - | - |
