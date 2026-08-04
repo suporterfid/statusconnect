@@ -45,6 +45,7 @@ class Monitor extends Model
         'current_state',
         'consecutive_failures',
         'consecutive_successes',
+        'first_failure_at',
         'last_checked_at',
         'next_check_at',
         'last_latency_ms',
@@ -68,6 +69,7 @@ class Monitor extends Model
         'enabled' => 'boolean',
         'paused_at' => 'datetime',
         'last_checked_at' => 'datetime',
+        'first_failure_at' => 'datetime',
         'next_check_at' => 'datetime',
         'tls_expires_at' => 'datetime',
         'last_ping_at' => 'datetime',
@@ -89,5 +91,10 @@ class Monitor extends Model
     public function assertions(): HasMany
     {
         return $this->hasMany(MonitorAssertion::class, 'monitor_id')->orderBy('order', 'asc');
+    }
+
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(Incident::class, 'monitor_id');
     }
 }
