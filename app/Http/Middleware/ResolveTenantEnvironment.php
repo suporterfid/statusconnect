@@ -5,6 +5,7 @@
 namespace App\Http\Middleware;
 
 use App\Infrastructure\Persistence\Eloquent\ApiKey;
+use App\Auth\GrandpaSsonActor;
 use App\Infrastructure\Persistence\Eloquent\Environment;
 use App\Infrastructure\Persistence\Eloquent\Tenant;
 use Closure;
@@ -46,7 +47,7 @@ class ResolveTenantEnvironment
             if ($apiKey->tenant_id !== $tenant->id) {
                 abort(404);
             }
-        } elseif (! $this->canAccessTenant($user, $tenant)) {
+        } elseif (! $user instanceof GrandpaSsonActor && ! $this->canAccessTenant($user, $tenant)) {
             abort(404);
         }
 

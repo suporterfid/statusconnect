@@ -131,11 +131,11 @@ cmd_npm() {
 
 cmd_test() {
   if compose run --rm app test -f artisan; then
-    compose run --rm app php artisan test "$@"
+    compose run --rm -e APP_ENV=testing -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: app php artisan test "$@"
   elif compose run --rm app test -f vendor/bin/pest; then
-    compose run --rm app vendor/bin/pest "$@"
+    compose run --rm -e APP_ENV=testing -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: app vendor/bin/pest "$@"
   elif compose run --rm app test -f vendor/bin/phpunit; then
-    compose run --rm app vendor/bin/phpunit "$@"
+    compose run --rm -e APP_ENV=testing -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: app vendor/bin/phpunit "$@"
   else
     echo "No test runner found. Scaffold Laravel or install dev dependencies first." >&2
     return 1

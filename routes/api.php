@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
+use App\Http\Controllers\Api\V1\GrandpaSsonTenantMappingController;
 use App\Http\Controllers\Api\V1\IncidentController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MonitorController;
@@ -22,7 +23,7 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::middleware(['auth.api_or_sanctum', 'tenant.context'])->group(function () {
+    Route::middleware(['auth.api_or_sanctum', 'tenant.context', 'grandpasson.workspace_aud'])->group(function () {
         Route::get('/tenants/{tenantId}/environments/{environmentId}/ping', function () {
             return response()->json(['status' => 'pong']);
         });
@@ -40,4 +41,6 @@ Route::prefix('v1')->group(function () {
             Route::delete('/monitors/{monitorId}', [MonitorController::class, 'destroy']);
         });
     });
+
+    Route::middleware(['auth.api_or_sanctum'])->post('/platform/grandpasson/tenant-mappings', [GrandpaSsonTenantMappingController::class, 'store']);
 });

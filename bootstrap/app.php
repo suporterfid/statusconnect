@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.api_or_sanctum' => \App\Http\Middleware\AuthenticateApiKeyOrSanctum::class,
             'tenant.context' => \App\Http\Middleware\ResolveTenantEnvironment::class,
+            'grandpasson.workspace_aud' => \App\Http\Middleware\EnforceGrandpaSsonWorkspaceAud::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
