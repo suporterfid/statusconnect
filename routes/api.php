@@ -22,7 +22,7 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::middleware(['auth.api_or_sanctum', 'tenant.context'])->group(function () {
+    Route::middleware(['auth.api_or_sanctum', 'tenant.context', 'grandpasson.workspace_aud'])->group(function () {
         Route::get('/tenants/{tenantId}/environments/{environmentId}/ping', function () {
             return response()->json(['status' => 'pong']);
         });

@@ -17,7 +17,7 @@
 - [ ] **PR10**: Heartbeat monitors
 - [ ] **PR11**: Maintenance windows
 - [ ] **PR12**: Operator SPA
-- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — the explicit administrator-managed tenant/role/group mapping is implemented; local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15); blocked only on the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
+- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — the explicit administrator-managed tenant/role/group mapping is implemented, and conflicting role/group resolution fails closed; local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15); blocked only on the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
 - [ ] **PR14**: TaskConnect integration
 - [ ] **PR15**: Release & deploy
 - [ ] **PR16**: E2E & accessibility
@@ -28,6 +28,8 @@
 
 ## Resolved Decisions
 
+- **GrandpaSSOn delegated tenancy mapping**: A platform administrator explicitly maps each broker tenant to a local StatusConnect tenant and defines `owner`/`admin`/`member` plus opaque groups to local `owner`/`admin`/`viewer` roles. Browser exchange never auto-provisions a tenant.
+- **GrandpaSSOn role/group precedence**: Conflicting mapped broker roles/groups fail closed; a mapping must resolve to exactly one local role.
 - **Status page hosting shape**: Path-based `/status/{slug}` for v0; custom domains deferred to post-v0.
 - **Interval floor policy**: Minimum interval enforced at 60s.
 - **`degraded` in uptime maths**: Excluded from downtime.

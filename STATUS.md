@@ -19,7 +19,7 @@ Current Phase: PR6 complete (Incident state machine); PR1 authentication remedia
 | **PR10** | Heartbeat monitors | Pending | - | - |
 | **PR11** | Maintenance windows | Pending | - | - |
 | **PR12** | Operator SPA | Pending | - | - |
-| **PR13** | GrandpaSSOn seam | Blocked | [#13](https://github.com/suporterfid/statusconnect/issues/13) | Implementation is ready on its feature branch, including the explicit administrator-managed broker-tenant mapping. Its local-auth prerequisite was restored by [PR #15](https://github.com/suporterfid/statusconnect/pull/15); the remaining blocker is the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). |
+| **PR13** | GrandpaSSOn seam | Blocked | [#13](https://github.com/suporterfid/statusconnect/issues/13) | Implementation is ready on its feature branch, including the explicit administrator-managed broker-tenant mapping with fail-closed role/group conflict handling. Its local-auth prerequisite was restored by [PR #15](https://github.com/suporterfid/statusconnect/pull/15); the remaining blocker is the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). |
 | **PR14** | TaskConnect integration | Pending | - | - |
 | **PR15** | Release & deploy | Pending | - | - |
 | **PR16** | E2E & accessibility | Pending | - | - |

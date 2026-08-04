@@ -12,7 +12,7 @@ The machine-auth path adds a small application contract for token introspection,
 
 The existing bearer middleware retains its native `sc_*` and session behavior. When inbound mode is enabled, a valid opaque broker token becomes a GrandpaSSOn actor. After tenant/environment resolution, a second middleware requires an active token, the configurable read or write scope for the HTTP method, and an audience matching either `env_*` or `workspace/env_*`. Failures return 403 and create a redacted audit record.
 
-The browser path creates and verifies a session `state`, redirects to the broker login endpoint, and redeems the returned code immediately through `/session/exchange`. Any missing, mismatched, expired, malformed, or failed exchange is unauthenticated; no partial identity is trusted. A local user is linked by email and the returned tenant claims can be consumed by the existing tenancy layer in later operator routes.
+The browser path creates and verifies a session `state`, redirects to the broker login endpoint, and redeems the returned code immediately through `/session/exchange`. Any missing, mismatched, expired, malformed, or failed exchange is unauthenticated; no partial identity is trusted. A local user is linked by email. A platform administrator explicitly links each broker tenant id to one local tenant and supplies the broker-role and opaque-group-to-local-role mappings; the exchange only grants membership through that stored mapping and never provisions a tenant implicitly.
 
 ## Verification
 

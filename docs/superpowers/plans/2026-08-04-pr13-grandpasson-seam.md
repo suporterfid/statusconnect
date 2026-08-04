@@ -4,7 +4,7 @@
 
 **Goal:** Add the opt-in GrandpaSSOn identity seam while preserving default local, Sanctum, and `sc_*` API-key behavior.
 
-**Architecture:** Define framework-light value objects and interfaces in `Application/GrandpaSson`; bind HTTP and cache implementations in the provider. Extend the existing authentication and tenant pipeline with an opaque-token actor plus post-resolution scope/audience middleware. Browser exchange logic is isolated in an identity provider/controller pair and uses the broker’s documented HTTP routes.
+**Architecture:** Define framework-light value objects and interfaces in `Application/GrandpaSson`; bind HTTP and cache implementations in the provider. Extend the existing authentication and tenant pipeline with an opaque-token actor plus post-resolution scope/audience middleware. Browser exchange logic is isolated in an identity provider/controller pair and uses the broker’s documented HTTP routes. A platform-admin-managed mapping persists each broker tenant id, linked local tenant, and role/group mappings; exchange never creates an unapproved tenant.
 
 **Tech Stack:** Laravel 12 HTTP client/cache/session, PHPUnit 11, SQLite in-memory tests, Docker `stc` wrapper.
 
@@ -76,15 +76,18 @@
 
 **Files:**
 - Create: `app/Application/GrandpaSson/GrandpaSsonIdentityProvider.php`
+- Create: `app/Application/GrandpaSson/GrandpaSsonTenantMappingService.php`
+- Create: `app/Infrastructure/Persistence/Eloquent/GrandpaSsonTenantMapping.php`
+- Create: `database/migrations/*_create_grandpasson_tenant_mappings_table.php`
 - Create: `app/Http/Controllers/Auth/GrandpaSsonLoginController.php`
 - Modify: `routes/web.php`
 - Test: `tests/Feature/GrandpaSson/BrowserLoginTest.php`
 
 **Interfaces:**
-- Produces `redirectToLogin(Request): RedirectResponse` and `handleCallback(Request): RedirectResponse`.
+- Produces `redirectToLogin(Request): RedirectResponse` and `handleCallback(Request): RedirectResponse`; `GrandpaSsonTenantMappingService` resolves a broker tenant id plus broker role/groups into the explicitly linked local tenant and `owner`/`admin`/`viewer` membership.
 - Uses the configured confidential RP client, session `state`, and immediate `/session/exchange` form post.
 
-- [ ] **Step 1: Write failing HTTP-fake tests** for redirect state, state mismatch, expired/broker-error exchange, and successful email-linked local identity.
+- [ ] **Step 1: Write failing HTTP-fake tests** for redirect state, state mismatch, expired/broker-error exchange, successful email-linked local identity, and membership granted only through an explicit local tenant mapping.
 - [ ] **Step 2: Run** `./scripts/stc.ps1 test --filter=BrowserLoginTest` and confirm failure because the controller is absent.
 - [ ] **Step 3: Implement** state generation/verification and fail-closed exchange; never read shared broker tables.
 - [ ] **Step 4: Run** the filter and confirm it passes.

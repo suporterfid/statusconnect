@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Application\Incidents\IncidentService;
+use App\Application\GrandpaSson\HttpIntrospectionClient;
+use App\Application\GrandpaSson\IntrospectionClientInterface;
 use App\Domain\Incidents\FlapPolicy;
 use App\Domain\Incidents\IncidentStateMachine;
 use App\Domain\Outbound\DnsResolverInterface;
@@ -26,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Clock::class, SystemClock::class);
+        $this->app->singleton(HttpIntrospectionClient::class);
+        $this->app->singleton(IntrospectionClientInterface::class, HttpIntrospectionClient::class);
         $this->app->singleton(IncidentService::class, function ($app): IncidentService {
             return new IncidentService(
                 $app->make(IncidentStateMachine::class),
