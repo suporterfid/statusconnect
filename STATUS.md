@@ -1,6 +1,6 @@
 # StatusConnect Implementation Status
 
-Current Phase: PR5 in progress (Parallel execution)
+Current Phase: PR5 complete (Parallel execution)
 
 ## PR Sequence Table
 
@@ -11,7 +11,7 @@ Current Phase: PR5 in progress (Parallel execution)
 | **PR2** | Outbound policy port | Completed | [#3](https://github.com/suporterfid/statusconnect/issues/3) | OutboundPolicy, IpClassifier, UrlValidator, DnsResolver, GuzzlePinnedHttpTransport, SSRF prevention (loopback, RFC1918, metadata, IPv6 link-local blocked), 27 unit & feature tests passing |
 | **PR3** | Monitors CRUD + assertions | Completed | [#4](https://github.com/suporterfid/statusconnect/issues/4) | Monitors & assertions database migrations, Eloquent models (Monitor, MonitorAssertion), pure AssertionEvaluator engine for 7 assertion types, MonitorService, API endpoints, 39 unit & feature tests passing |
 | **PR4** | Scheduler core (sequential) | Completed | [#5](https://github.com/suporterfid/statusconnect/issues/5) | `monitor:check-due`, portable conditional claim leases, claim-time drift scheduling, TickBudget, checker/maintenance heartbeats, stale-claim recovery, claim-token fencing, and a two-process concurrent claim test. Verified with 61 tests / 131 assertions. PR5 is next. |
-| **PR5** | Parallel execution | In progress | [#7](https://github.com/suporterfid/statusconnect/issues/7) | Bounded scheduler limits and DNS-pinned `curl_multi` HTTP probe are implemented. The 30-monitor fixture with 5-second targets completed in 5.09s; async TCP and the scheduler wave runner remain before completion. |
+| **PR5** | Parallel execution | Completed | [#7](https://github.com/suporterfid/statusconnect/issues/7) | Bounded 10-wide waves, DNS-pinned `curl_multi` HTTP, async pinned TCP, shared wave deadlines, claim-token fenced persistence, and the parallel `monitor:check-due` path. The real 30-monitor / 5-second fixture completed in 15.22s within the 45-second budget; 77 tests / 190 assertions verified. |
 | **PR6** | Incident state machine | Pending | - | - |
 | **PR7** | Rollups & retention | Pending | - | - |
 | **PR8** | Public status page | Pending | - | - |
