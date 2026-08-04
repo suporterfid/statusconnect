@@ -9,6 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('monitors', function (Blueprint $table) {
+            $table->integer('confirmation_threshold')->default(3)->change();
             $table->timestamp('first_failure_at')->nullable()->after('consecutive_successes');
         });
 
