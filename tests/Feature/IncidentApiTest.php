@@ -110,4 +110,35 @@ class IncidentApiTest extends TestCase
         $this->assertNotNull($resolved->resolved_at);
         $this->assertNull($resolved->resolved_flag);
     }
+
+    public function test_idempotency_key_is_scoped_to_the_environment(): void
+    {
+        $secondEnvironment = Environment::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Staging',
+            'slug' => 'staging',
+        ]);
+        $unscopedKey = app(ApiKeyService::class)->create(
+            tenant: $this->tenant,
+            actor: User::query()->firstOrFail(),
+            name: 'Tenant incident API',
+            permissions: ['*'],
+        )['plaintext'];
+        $payload = ['summary' => 'Independent write', 'severity' => 'minor'];
+        $key = 'same-key-different-environments';
+
+        $first = $this->withHeaders([
+            'Authorization' => 'Bearer '.$unscopedKey,
+            'Idempotency-Key' => $key,
+        ])->postJson("/v1/tenants/{$this->tenant->public_id}/environments/{$this->environment->public_id}/incidents", $payload)
+            ->assertCreated();
+        $second = $this->withHeaders([
+            'Authorization' => 'Bearer '.$unscopedKey,
+            'Idempotency-Key' => $key,
+        ])->postJson("/v1/tenants/{$this->tenant->public_id}/environments/{$secondEnvironment->public_id}/incidents", $payload)
+            ->assertCreated();
+
+        $this->assertNotSame($first->json('data.public_id'), $second->json('data.public_id'));
+        $this->assertSame(2, Incident::query()->count());
+    }
 }

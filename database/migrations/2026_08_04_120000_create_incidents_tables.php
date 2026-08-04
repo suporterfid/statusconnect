@@ -15,6 +15,12 @@ return new class extends Migration
             $table->timestamp('flap_notification_window_started_at')->nullable()->after('flapping_since');
         });
 
+        Schema::table('idempotency_keys', function (Blueprint $table) {
+            $table->index('tenant_id');
+            $table->dropUnique(['tenant_id', 'key', 'route']);
+            $table->unique(['environment_id', 'key', 'route']);
+        });
+
         Schema::create('incidents', function (Blueprint $table) {
             $table->id();
             $table->string('public_id', 36)->unique();
@@ -55,7 +61,14 @@ return new class extends Migration
         Schema::dropIfExists('incidents');
 
         Schema::table('monitors', function (Blueprint $table) {
+            $table->dropColumn('flap_notification_window_started_at');
             $table->dropColumn('first_failure_at');
+        });
+
+        Schema::table('idempotency_keys', function (Blueprint $table) {
+            $table->dropUnique(['environment_id', 'key', 'route']);
+            $table->unique(['tenant_id', 'key', 'route']);
+            $table->dropIndex(['tenant_id']);
         });
     }
 };

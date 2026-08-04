@@ -31,6 +31,7 @@ class IdempotentWriteService
             return DB::transaction(function () use ($tenant, $environment, $user, $apiKeyId, $key, $route, $requestHash, $now, $write) {
                 $existing = IdempotencyKey::query()
                     ->where('tenant_id', $tenant->id)
+                    ->where('environment_id', $environment->id)
                     ->where('key', $key)
                     ->where('route', $route)
                     ->lockForUpdate()
@@ -59,6 +60,7 @@ class IdempotentWriteService
         } catch (QueryException $exception) {
             $existing = IdempotencyKey::query()
                 ->where('tenant_id', $tenant->id)
+                ->where('environment_id', $environment->id)
                 ->where('key', $key)
                 ->where('route', $route)
                 ->first();
