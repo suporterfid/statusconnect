@@ -2,6 +2,8 @@
 
 ## Active PR Units
 
+- [ ] **Remediation #14**: Restore local email/password login, logout, and session-based `/v1/me` independently of GrandpaSSOn, before merging PR13.
+
 - [x] **PR0**: Repo scaffold & Docker loop
 - [x] **PR1**: Tenancy, auth, isolation
 - [x] **PR2**: Outbound policy port
@@ -15,14 +17,14 @@
 - [ ] **PR10**: Heartbeat monitors
 - [ ] **PR11**: Maintenance windows
 - [ ] **PR12**: Operator SPA
-- [ ] **PR13**: GrandpaSSOn seam
+- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) â€” blocked on remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) and the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
 - [ ] **PR14**: TaskConnect integration
 - [ ] **PR15**: Release & deploy
 - [ ] **PR16**: E2E & accessibility
 
 ## Open Questions (§23)
 
-1. **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, `status:callback` issue to be opened in `grandpasson` repo before PR13 live broker testing.
+1. **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, and `status:callback` are proposed in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). The StatusConnect side must not enable live broker traffic until the broker accepts and implements them.
 
 ## Resolved Decisions
 
