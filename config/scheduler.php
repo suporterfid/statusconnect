@@ -6,4 +6,6 @@ return [
     'execution_reserve_seconds' => (int) env('CHECK_EXECUTION_RESERVE_SECONDS', 1),
     'claim_ttl_minutes' => (int) env('CHECK_CLAIM_TTL_MINUTES', 5),
     'stale_claim_recovery_batch_size' => (int) env('CHECK_STALE_CLAIM_RECOVERY_BATCH_SIZE', 50),
+    'check_concurrency' => (int) env('CHECK_CONCURRENCY', 10),
+    'check_wave_size' => env('CHECK_WAVE_SIZE'),
 ];

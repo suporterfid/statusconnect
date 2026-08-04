@@ -7,7 +7,7 @@
 - [x] **PR2**: Outbound policy port
 - [x] **PR3**: Monitors CRUD + assertions
 - [x] **PR4**: Scheduler core (sequential)
-- [ ] **PR5**: Parallel execution
+- [x] **PR5**: Parallel execution ([#7](https://github.com/suporterfid/statusconnect/issues/7)) — verified with a 30-monitor / 5-second fixture in 15.22s within the 45-second tick budget; PR6 is next.
 - [ ] **PR6**: Incident state machine
 - [ ] **PR7**: Rollups & retention
 - [ ] **PR8**: Public status page

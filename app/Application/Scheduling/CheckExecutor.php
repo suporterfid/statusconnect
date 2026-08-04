@@ -16,6 +16,7 @@ use App\Domain\Secrets\SecretRedactor;
 use App\Domain\Shared\Clock;
 use App\Infrastructure\HttpClient\PinnedHttpRequest;
 use App\Infrastructure\HttpClient\PinnedHttpTransport;
+use App\Infrastructure\HttpClient\PinnedHttpResponse;
 use App\Infrastructure\Persistence\Eloquent\CheckResult;
 use App\Infrastructure\Persistence\Eloquent\Monitor;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,13 @@ class CheckExecutor
             $outcome = new CheckOutcome(statusCode: 200, latencyMs: 10);
         }
 
+        return $this->persist($monitor, $outcome);
+    }
+
+    public function persist(Monitor $monitor, CheckOutcome $outcome): ?CheckResult
+    {
+        $now = $this->clock->nowUtc();
+        $claimToken = $monitor->claim_token;
         $assertionDefs = $monitor->assertions->map(fn ($ast) => new AssertionDefinition(
             type: $ast->type,
             operator: $ast->operator,
@@ -107,7 +115,7 @@ class CheckExecutor
         });
     }
 
-    private function executeHttpCheck(Monitor $monitor): CheckOutcome
+    public function prepareHttp(Monitor $monitor): PinnedHttpRequest|CheckOutcome
     {
         try {
             $validatedEndpoint = $this->outboundPolicy->validateUrl(
@@ -116,34 +124,37 @@ class CheckExecutor
                 $monitor->egress_profile,
             );
         } catch (OutboundPolicyViolation $violation) {
-            return CheckOutcome::blocked($violation->getMessage());
+            return CheckOutcome::blocked($violation->reasonCode);
         }
 
-        $headers = is_array($monitor->request_headers_json) ? $monitor->request_headers_json : [];
-        $request = new PinnedHttpRequest(
-            method: $monitor->http_method ?: 'GET',
-            endpoint: $validatedEndpoint,
-            headers: $headers,
-            body: $monitor->request_body,
-            verifyTls: $monitor->verify_tls,
-            followRedirects: $monitor->follow_redirects,
+        return new PinnedHttpRequest(
+            method: $monitor->http_method ?: 'GET', endpoint: $validatedEndpoint,
+            headers: is_array($monitor->request_headers_json) ? $monitor->request_headers_json : [],
+            body: $monitor->request_body, verifyTls: $monitor->verify_tls, followRedirects: $monitor->follow_redirects,
             totalTimeout: (int) ceil($monitor->timeout_ms / 1000),
             egressProfile: \App\Domain\Outbound\EgressProfile::tryFromMixed($monitor->egress_profile),
         );
+    }
+
+    public function outcomeFromHttpResponse(PinnedHttpResponse $response, int $latencyMs): CheckOutcome
+    {
+        if ($response->transportError !== null && str_starts_with($response->transportError, 'blocked:')) {
+            return CheckOutcome::blocked(substr($response->transportError, 8));
+        }
+        return $response->transportError !== null
+            ? CheckOutcome::transportError($response->transportError, $latencyMs)
+            : new CheckOutcome(statusCode: $response->statusCode, latencyMs: $latencyMs, headers: $response->headers, body: $response->bodyTruncated);
+    }
+
+    private function executeHttpCheck(Monitor $monitor): CheckOutcome
+    {
+        $request = $this->prepareHttp($monitor);
+        if ($request instanceof CheckOutcome) return $request;
 
         $startTime = microtime(true);
         $response = $this->httpTransport->send($request);
         $latencyMs = (int) round((microtime(true) - $startTime) * 1000);
 
-        if ($response->transportError !== null) {
-            return CheckOutcome::transportError($response->transportError, $latencyMs);
-        }
-
-        return new CheckOutcome(
-            statusCode: $response->statusCode,
-            latencyMs: $latencyMs,
-            headers: $response->headers,
-            body: $response->bodyTruncated,
-        );
+        return $this->outcomeFromHttpResponse($response, $latencyMs);
     }
 }

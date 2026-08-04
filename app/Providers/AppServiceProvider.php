@@ -5,11 +5,17 @@ namespace App\Providers;
 use App\Domain\Outbound\DnsResolverInterface;
 use App\Domain\Outbound\OutboundPolicy;
 use App\Domain\Outbound\OutboundPolicyConfig;
+use App\Domain\Outbound\IpClassifier;
+use App\Domain\Outbound\TcpTargetValidator;
 use App\Domain\Shared\Clock;
 use App\Domain\Shared\SystemClock;
 use App\Infrastructure\Dns\SystemDnsResolver;
 use App\Infrastructure\HttpClient\GuzzlePinnedHttpTransport;
+use App\Infrastructure\HttpClient\CurlMultiPinnedProbe;
+use App\Infrastructure\HttpClient\MultiPinnedHttpProbe;
 use App\Infrastructure\HttpClient\PinnedHttpTransport;
+use App\Infrastructure\Tcp\PinnedTcpProbe;
+use App\Infrastructure\Tcp\StreamSelectPinnedTcpProbe;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,9 +31,20 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(DnsResolverInterface::class),
             );
         });
+        $this->app->singleton(TcpTargetValidator::class, function ($app): TcpTargetValidator {
+            return new TcpTargetValidator(
+                $app->make(DnsResolverInterface::class),
+                new IpClassifier((array) config('outbound.metadata_ips', [])),
+                (array) config('outbound.allowed_ports', [80, 443]),
+            );
+        });
 
         $this->app->singleton(GuzzlePinnedHttpTransport::class);
         $this->app->singleton(PinnedHttpTransport::class, GuzzlePinnedHttpTransport::class);
+        $this->app->singleton(CurlMultiPinnedProbe::class);
+        $this->app->singleton(MultiPinnedHttpProbe::class, CurlMultiPinnedProbe::class);
+        $this->app->singleton(StreamSelectPinnedTcpProbe::class);
+        $this->app->singleton(PinnedTcpProbe::class, StreamSelectPinnedTcpProbe::class);
     }
 
     public function boot(): void
