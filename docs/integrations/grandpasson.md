@@ -4,7 +4,7 @@ StatusConnect supports GrandpaSSOn as an opt-in identity provider and machine-to
 
 ## Broker prerequisites
 
-The broker must first ship `status:read`, `status:write`, and `status:callback` from [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). Create two different registrations; the browser RP client cannot introspect machine tokens, and the service client cannot perform browser login.
+GrandpaSSOn shipped `status:read`, `status:write`, and `status:callback` in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117). Create two different registrations; the browser RP client cannot introspect machine tokens, and the service client cannot perform browser login.
 
 ```bash
 # Browser code exchange client: exact callback URL and confidential secret.
@@ -49,6 +49,8 @@ Enable either flag only after the corresponding registration and local tenant ma
 Begin login at `/auth/grandpasson/login/google`, `/microsoft`, or `/github`. StatusConnect records a one-use session state, then redeems the returned code immediately at `/session/exchange` with form-body confidential-client credentials.
 
 A platform administrator creates a mapping through `POST /v1/platform/grandpasson/tenant-mappings` while authenticated locally. Supply the broker tenant id, local tenant public id, and explicit broker-role/group mappings. A login with no mapping or conflicting mapped role/group values is denied. Broker claims never grant platform-admin status. The local email/password login prerequisite is tracked in [StatusConnect #14](https://github.com/suporterfid/statusconnect/issues/14); do not enable browser login until it is released.
+
+The local email/password prerequisite was released in [StatusConnect PR #15](https://github.com/suporterfid/statusconnect/pull/15); local login is available independently of the GrandpaSSOn flags.
 
 ## Machine tokens
 

@@ -799,9 +799,12 @@ Then set the `GRANDPASSON_*` values in StatusConnect and flip the enable flags.
 
 **Cross-repo dependency — this is a hard blocker for inbound mode.** GrandpaSSOn's scope vocabulary is a **static allowlist** in `app/Domain/ScopeVocabulary.php`; there is no dynamic scope registration, and `client:create-service` aborts on an unknown scope. The scopes `status:read`, `status:write`, and `status:callback` **do not exist today**. Therefore:
 
-- An issue **MUST** be opened in `suporterfid/grandpasson` to add them before PR13 can be verified against a live broker.
+> **Implementation update (2026-08-04):** GrandpaSSOn delivered all three scopes in [#117](https://github.com/suporterfid/grandpasson/pull/117). The remaining live-verification inputs are the documented operator registrations, credentials, and local tenant mapping.
+>
+
+- The scope request was delivered by [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117); live verification now requires operator-created registrations, credentials, and an explicit tenant mapping.
 - `docs/architecture/grandpasson-cross-repo.md` **MUST** track the status of each scope, mirroring how TaskConnect tracks `tasks:write`.
-- Until they land, PR13 **MUST** still be completed and merged with the flags defaulted off and tested against fakes. v0 **MUST NOT** be blocked on the broker.
+- PR13 **MUST** keep flags defaulted off and be tested against fakes. v0 **MUST NOT** be blocked on deployment configuration.
 
 ### 15.7 Known traps (verified against broker source — do not repeat these)
 

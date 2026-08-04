@@ -4,9 +4,9 @@ StatusConnect uses GrandpaSSOn only when its feature flags are enabled. The brok
 
 | Scope | StatusConnect use | Broker status |
 | --- | --- | --- |
-| `status:read` | Machine API safe/read methods | Requested in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116) |
-| `status:write` | Machine API mutation methods | Requested in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116) |
-| `status:callback` | Reserved for StatusConnect-originated signed callbacks | Requested in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116) |
+| `status:read` | Machine API safe/read methods | Available in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117) |
+| `status:write` | Machine API mutation methods | Available in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117) |
+| `status:callback` | Reserved for StatusConnect-originated signed callbacks | Available in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117) |
 
 ## Audience contract
 
@@ -24,4 +24,4 @@ A StatusConnect platform administrator must create the local broker-tenant mappi
 
 ## Release dependency
 
-Flags stay off by default and fake-backed tests cover the seam before the broker scope release. A live broker verification requires all three scopes from #116 and a service client created with a pinned audience.
+Flags stay off by default and fake-backed tests cover the seam. A live broker verification requires a service client created with the three available scopes and a pinned audience, plus an explicit local tenant mapping.

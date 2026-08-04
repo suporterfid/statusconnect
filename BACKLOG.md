@@ -17,14 +17,14 @@
 - [ ] **PR10**: Heartbeat monitors
 - [ ] **PR11**: Maintenance windows
 - [ ] **PR12**: Operator SPA
-- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — the explicit administrator-managed tenant/role/group mapping is implemented, and conflicting role/group resolution fails closed; local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15); blocked only on the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
+- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) — ready to merge. The explicit administrator-managed tenant/role/group mapping is implemented, conflicting role/group resolution fails closed, and local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15). The broker scope prerequisite shipped in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117); live verification awaits operator-created registrations and credentials.
 - [ ] **PR14**: TaskConnect integration
 - [ ] **PR15**: Release & deploy
 - [ ] **PR16**: E2E & accessibility
 
 ## Open Questions (§23)
 
-1. **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, and `status:callback` are proposed in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). The StatusConnect side must not enable live broker traffic until the broker accepts and implements them.
+1. **Introspection caching vs. revocation latency**: caching is bounded by token expiry and defaults to 30 seconds. High-privilege write cache policy remains an operator/security decision.
 
 ## Resolved Decisions
 
@@ -36,3 +36,4 @@
 - **Heartbeat-only tenants**: Allowed.
 - **Self-monitoring honesty**: Document external ping recipes and surface stale checker heartbeat on the public status page.
 - **Retention vs. host quota**: Warn when approaching the database budget in v0.
+- **GrandpaSSOn scope vocabulary**: `status:read`, `status:write`, and `status:callback` shipped in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117). Keep integration flags off until the operator configures the two broker clients and an explicit local tenant mapping.
