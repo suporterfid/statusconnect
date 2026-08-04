@@ -2,7 +2,7 @@
 
 ## Active PR Units
 
-- [ ] **Remediation #14**: Restore local email/password login, logout, and session-based `/v1/me` independently of GrandpaSSOn, before merging PR13.
+- [x] **Remediation #14**: Local email/password login, logout, and session-based `/v1/me` restored independently of GrandpaSSOn in [PR #15](https://github.com/suporterfid/statusconnect/pull/15); verified with 101 tests / 284 assertions.
 
 - [x] **PR0**: Repo scaffold & Docker loop
 - [x] **PR1**: Tenancy, auth, isolation
@@ -17,7 +17,7 @@
 - [ ] **PR10**: Heartbeat monitors
 - [ ] **PR11**: Maintenance windows
 - [ ] **PR12**: Operator SPA
-- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) â€” blocked on remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) and the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
+- [ ] **PR13**: GrandpaSSOn seam ([#13](https://github.com/suporterfid/statusconnect/issues/13)) â€” local-auth prerequisite completed in [PR #15](https://github.com/suporterfid/statusconnect/pull/15); blocked only on the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116).
 - [ ] **PR14**: TaskConnect integration
 - [ ] **PR15**: Release & deploy
 - [ ] **PR16**: E2E & accessibility

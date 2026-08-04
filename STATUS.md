@@ -1,13 +1,13 @@
 # StatusConnect Implementation Status
 
-Current Phase: PR6 complete (Incident state machine); PR1 authentication remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) in progress before the blocked PR13 GrandpaSSOn seam can merge.
+Current Phase: PR6 complete (Incident state machine); PR1 authentication remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) merged via [PR #15](https://github.com/suporterfid/statusconnect/pull/15). PR13 remains blocked only on the broker scope-vocabulary proposal.
 
 ## PR Sequence Table
 
 | PR | Title | Status | Issue | Verified On / Details |
 |---|---|---|---|---|
 | **PR0** | Repo scaffold & Docker loop | Completed | [#1](https://github.com/suporterfid/statusconnect/issues/1) | Scaffold, compose stack, stc wrapper, target mock service, PHPUnit test suite passing |
-| **PR1** | Tenancy, auth, isolation | Completed with remediation in progress | [#2](https://github.com/suporterfid/statusconnect/issues/2), [#14](https://github.com/suporterfid/statusconnect/issues/14) | Core tables & security migrations, Eloquent models, PublicId, ApiKeyService, sc_* bearer auth, workspace scoping middleware (ResolveTenantEnvironment), tenant isolation (404), RBAC. Remediation #14 restores the missing local email/password session flow required by §15. |
+| **PR1** | Tenancy, auth, isolation | Completed | [#2](https://github.com/suporterfid/statusconnect/issues/2), [#14](https://github.com/suporterfid/statusconnect/issues/14) | Core tables & security migrations, Eloquent models, PublicId, ApiKeyService, sc_* bearer auth, workspace scoping middleware (ResolveTenantEnvironment), tenant isolation (404), RBAC. Remediation [PR #15](https://github.com/suporterfid/statusconnect/pull/15) restored the required local email/password session flow; `stc test` passed with 101 tests / 284 assertions. |
 | **PR2** | Outbound policy port | Completed | [#3](https://github.com/suporterfid/statusconnect/issues/3) | OutboundPolicy, IpClassifier, UrlValidator, DnsResolver, GuzzlePinnedHttpTransport, SSRF prevention (loopback, RFC1918, metadata, IPv6 link-local blocked), 27 unit & feature tests passing |
 | **PR3** | Monitors CRUD + assertions | Completed | [#4](https://github.com/suporterfid/statusconnect/issues/4) | Monitors & assertions database migrations, Eloquent models (Monitor, MonitorAssertion), pure AssertionEvaluator engine for 7 assertion types, MonitorService, API endpoints, 39 unit & feature tests passing |
 | **PR4** | Scheduler core (sequential) | Completed | [#5](https://github.com/suporterfid/statusconnect/issues/5) | `monitor:check-due`, portable conditional claim leases, claim-time drift scheduling, TickBudget, checker/maintenance heartbeats, stale-claim recovery, claim-token fencing, and a two-process concurrent claim test. Verified with 61 tests / 131 assertions. PR5 is next. |
@@ -19,7 +19,7 @@ Current Phase: PR6 complete (Incident state machine); PR1 authentication remedia
 | **PR10** | Heartbeat monitors | Pending | - | - |
 | **PR11** | Maintenance windows | Pending | - | - |
 | **PR12** | Operator SPA | Pending | - | - |
-| **PR13** | GrandpaSSOn seam | Blocked | [#13](https://github.com/suporterfid/statusconnect/issues/13) | Implementation is ready on its feature branch, but must not merge until remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) restores local email/password authentication. The broker scope-vocabulary proposal remains tracked in [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). |
+| **PR13** | GrandpaSSOn seam | Blocked | [#13](https://github.com/suporterfid/statusconnect/issues/13) | Implementation is ready on its feature branch. Its local-auth prerequisite was restored by [PR #15](https://github.com/suporterfid/statusconnect/pull/15); the remaining blocker is the broker scope-vocabulary proposal [grandpasson#116](https://github.com/suporterfid/grandpasson/issues/116). |
 | **PR14** | TaskConnect integration | Pending | - | - |
 | **PR15** | Release & deploy | Pending | - | - |
 | **PR16** | E2E & accessibility | Pending | - | - |
