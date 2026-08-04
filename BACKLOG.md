@@ -11,7 +11,7 @@
 - [x] **PR4**: Scheduler core (sequential)
 - [x] **PR5**: Parallel execution ([#7](https://github.com/suporterfid/statusconnect/issues/7)) — verified with a 30-monitor / 5-second fixture in 15.22s within the 45-second tick budget; PR6 is next.
 - [x] **PR6**: Incident state machine ([#9](https://github.com/suporterfid/statusconnect/issues/9)) — merged in [PR #10](https://github.com/suporterfid/statusconnect/pull/10); main verified with 98 tests / 272 assertions. PR7 is next.
-- [ ] **PR7**: Rollups & retention
+- [ ] **PR7**: Rollups & retention ([#18](https://github.com/suporterfid/statusconnect/issues/18)) — in progress; raw-result retention is gated on daily rollup coverage.
 - [ ] **PR8**: Public status page
 - [ ] **PR9**: Notifications
 - [ ] **PR10**: Heartbeat monitors

@@ -1,6 +1,6 @@
 # StatusConnect Implementation Status
 
-Current Phase: PR6 complete (Incident state machine); PR1 authentication remediation [#14](https://github.com/suporterfid/statusconnect/issues/14) merged via [PR #15](https://github.com/suporterfid/statusconnect/pull/15). PR13 completes via [PR #17](https://github.com/suporterfid/statusconnect/pull/17), after its broker scope prerequisite shipped in [grandpasson#117](https://github.com/suporterfid/grandpasson/pull/117).
+Current Phase: PR7 in progress ([#18](https://github.com/suporterfid/statusconnect/issues/18)): rollups and retention. PR13 completed via [PR #17](https://github.com/suporterfid/statusconnect/pull/17).
 
 ## PR Sequence Table
 
@@ -13,7 +13,7 @@ Current Phase: PR6 complete (Incident state machine); PR1 authentication remedia
 | **PR4** | Scheduler core (sequential) | Completed | [#5](https://github.com/suporterfid/statusconnect/issues/5) | `monitor:check-due`, portable conditional claim leases, claim-time drift scheduling, TickBudget, checker/maintenance heartbeats, stale-claim recovery, claim-token fencing, and a two-process concurrent claim test. Verified with 61 tests / 131 assertions. PR5 is next. |
 | **PR5** | Parallel execution | Completed | [#7](https://github.com/suporterfid/statusconnect/issues/7) | Bounded 10-wide waves, DNS-pinned `curl_multi` HTTP, async pinned TCP, shared wave deadlines, claim-token fenced persistence, and the parallel `monitor:check-due` path. The real 30-monitor / 5-second fixture completed in 15.22s within the 45-second budget; 77 tests / 190 assertions verified. |
 | **PR6** | Incident state machine | Completed | [#9](https://github.com/suporterfid/statusconnect/issues/9) | Merged via [PR #10](https://github.com/suporterfid/statusconnect/pull/10): pure confirmation/recovery transitions, transactional lifecycle, one-open-incident constraint, persisted flap suppression, and environment-scoped/idempotent incident API. Main verified with 98 tests / 272 assertions. PR7 is next. |
-| **PR7** | Rollups & retention | Pending | - | - |
+| **PR7** | Rollups & retention | In progress | [#18](https://github.com/suporterfid/statusconnect/issues/18) | Closed hourly/daily rollups, idempotent upserts, and retention gated on daily coverage. |
 | **PR8** | Public status page | Pending | - | - |
 | **PR9** | Notifications | Pending | - | - |
 | **PR10** | Heartbeat monitors | Pending | - | - |
