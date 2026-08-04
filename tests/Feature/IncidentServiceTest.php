@@ -69,6 +69,7 @@ class IncidentServiceTest extends TestCase
     public function test_blocked_check_preserves_failure_streak_and_opens_no_incident(): void
     {
         $this->monitor->update([
+            'current_state' => CheckState::UP,
             'consecutive_failures' => 1,
             'first_failure_at' => '2026-08-04 10:00:00',
         ]);

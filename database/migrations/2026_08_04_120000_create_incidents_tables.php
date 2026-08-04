@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::table('monitors', function (Blueprint $table) {
             $table->integer('confirmation_threshold')->default(3)->change();
+            $table->string('current_state', 32)->default('pending')->change();
             $table->timestamp('first_failure_at')->nullable()->after('consecutive_successes');
         });
 
