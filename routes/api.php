@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::middleware(['web', 'throttle:10,1'])->post('/auth/login', LoginController::class);
 
-    Route::middleware(['web', 'auth.api_or_sanctum'])->group(function () {
+    Route::middleware(['web', 'auth.api_or_sanctum', 'locale.from_user'])->group(function () {
         Route::post('/auth/logout', LogoutController::class);
         Route::get('/me', MeController::class);
     });
@@ -23,7 +23,7 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::middleware(['auth.api_or_sanctum', 'tenant.context', 'grandpasson.workspace_aud'])->group(function () {
+    Route::middleware(['auth.api_or_sanctum', 'locale.from_user', 'tenant.context', 'grandpasson.workspace_aud'])->group(function () {
         Route::get('/tenants/{tenantId}/environments/{environmentId}/ping', function () {
             return response()->json(['status' => 'pong']);
         });
@@ -42,5 +42,5 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware(['auth.api_or_sanctum'])->post('/platform/grandpasson/tenant-mappings', [GrandpaSsonTenantMappingController::class, 'store']);
+    Route::middleware(['auth.api_or_sanctum', 'locale.from_user'])->post('/platform/grandpasson/tenant-mappings', [GrandpaSsonTenantMappingController::class, 'store']);
 });

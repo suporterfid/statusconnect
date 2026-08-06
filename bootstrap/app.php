@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'auth.api_or_sanctum' => \App\Http\Middleware\AuthenticateApiKeyOrSanctum::class,
+            'locale.from_user' => \App\Http\Middleware\SetLocaleFromUser::class,
             'tenant.context' => \App\Http\Middleware\ResolveTenantEnvironment::class,
             'grandpasson.workspace_aud' => \App\Http\Middleware\EnforceGrandpaSsonWorkspaceAud::class,
             'public.status.throttle' => \App\Http\Middleware\EnforcePublicStatusPageRateLimit::class,
