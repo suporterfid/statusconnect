@@ -22,11 +22,10 @@ warn_packagist_mirror() {
 }
 
 composer_env_args() {
-  local args=()
+  env_args=()
   if [[ -n "${COMPOSER_PACKAGIST_URL:-}" ]]; then
-    args+=(-e "COMPOSER_PACKAGIST_URL=${COMPOSER_PACKAGIST_URL}")
+    env_args+=(-e "COMPOSER_PACKAGIST_URL=${COMPOSER_PACKAGIST_URL}")
   fi
-  printf '%s\n' "${args[@]}"
 }
 
 composer_install_with_retry() {
@@ -36,7 +35,8 @@ composer_install_with_retry() {
 
   warn_packagist_mirror
 
-  mapfile -t env_args < <(composer_env_args)
+  local env_args=()
+  composer_env_args
 
   while (( attempt <= max_attempts )); do
     if compose run --rm "${env_args[@]}" app composer "$@"; then
@@ -117,7 +117,8 @@ cmd_composer() {
   fi
 
   warn_packagist_mirror
-  mapfile -t env_args < <(composer_env_args)
+  local env_args=()
+  composer_env_args
   compose run --rm "${env_args[@]}" app composer "$@"
 }
 
