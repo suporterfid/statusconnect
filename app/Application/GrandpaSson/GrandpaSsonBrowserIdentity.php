@@ -11,5 +11,6 @@ final readonly class GrandpaSsonBrowserIdentity
         public string $brokerTenantId,
         public string $brokerRole,
         public array $groups,
+        public string $locale = 'en',
     ) {}
 }

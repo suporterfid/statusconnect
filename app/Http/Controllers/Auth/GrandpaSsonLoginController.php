@@ -7,6 +7,7 @@ use App\Application\GrandpaSson\GrandpaSsonTenantMappingService;
 use App\Http\Controllers\Controller;
 use App\Infrastructure\Persistence\Eloquent\TenantMembership;
 use App\Infrastructure\Persistence\Eloquent\User;
+use App\Infrastructure\Persistence\Eloquent\UserPreference;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,6 +73,11 @@ class GrandpaSsonLoginController extends Controller
         TenantMembership::query()->updateOrCreate(
             ['tenant_id' => $access->tenant->id, 'user_id' => $user->id],
             ['role' => $access->role->value],
+        );
+
+        UserPreference::query()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['locale' => $identity->locale],
         );
 
         Auth::login($user);

@@ -65,6 +65,104 @@ class BrowserLoginTest extends TestCase
         });
     }
 
+    public function test_callback_syncs_the_locale_claim_into_user_preferences(): void
+    {
+        $this->configureBroker();
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $tenant = app(TenantService::class)->createTenant('Mapped Tenant', 'mapped-tenant', $admin);
+        app(GrandpaSsonTenantMappingService::class)->upsert(
+            actor: $admin,
+            brokerTenantId: 'gss_tenant_acme',
+            tenant: $tenant,
+            roleMappings: ['admin' => 'admin'],
+            groupMappings: ['editors' => 'admin'],
+        );
+        Http::fake([
+            'https://broker.test/session/exchange' => Http::response([
+                'subject' => ['id' => 'gss_subject_1', 'email' => 'locale-operator@example.test', 'name' => 'Operator'],
+                'tenant' => ['id' => 'gss_tenant_acme', 'role' => 'admin'],
+                'groups' => ['editors'],
+                'locale' => 'pt_BR',
+            ]),
+        ]);
+
+        $login = $this->get('/auth/grandpasson/login/github');
+        parse_str((string) parse_url($login->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->get('/auth/grandpasson/callback?code=one-time-code&state='.$query['state']);
+
+        $user = User::query()->where('email', 'locale-operator@example.test')->sole();
+        $this->assertSame('pt_BR', \App\Infrastructure\Persistence\Eloquent\UserPreference::query()->where('user_id', $user->id)->value('locale'));
+    }
+
+    public function test_callback_defaults_locale_to_english_when_the_claim_is_missing(): void
+    {
+        $this->configureBroker();
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $tenant = app(TenantService::class)->createTenant('Mapped Tenant', 'mapped-tenant', $admin);
+        app(GrandpaSsonTenantMappingService::class)->upsert(
+            actor: $admin,
+            brokerTenantId: 'gss_tenant_acme',
+            tenant: $tenant,
+            roleMappings: ['admin' => 'admin'],
+            groupMappings: ['editors' => 'admin'],
+        );
+        Http::fake([
+            'https://broker.test/session/exchange' => Http::response([
+                'subject' => ['id' => 'gss_subject_1', 'email' => 'no-locale-operator@example.test', 'name' => 'Operator'],
+                'tenant' => ['id' => 'gss_tenant_acme', 'role' => 'admin'],
+                'groups' => ['editors'],
+            ]),
+        ]);
+
+        $login = $this->get('/auth/grandpasson/login/github');
+        parse_str((string) parse_url($login->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->get('/auth/grandpasson/callback?code=one-time-code&state='.$query['state']);
+
+        $user = User::query()->where('email', 'no-locale-operator@example.test')->sole();
+        $this->assertSame('en', \App\Infrastructure\Persistence\Eloquent\UserPreference::query()->where('user_id', $user->id)->value('locale'));
+    }
+
+    public function test_second_login_updates_the_existing_preference_row(): void
+    {
+        $this->configureBroker();
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $tenant = app(TenantService::class)->createTenant('Mapped Tenant', 'mapped-tenant', $admin);
+        app(GrandpaSsonTenantMappingService::class)->upsert(
+            actor: $admin,
+            brokerTenantId: 'gss_tenant_acme',
+            tenant: $tenant,
+            roleMappings: ['admin' => 'admin'],
+            groupMappings: ['editors' => 'admin'],
+        );
+
+        Http::fakeSequence('https://broker.test/session/exchange')
+            ->push([
+                'subject' => ['id' => 'gss_subject_1', 'email' => 'repeat-operator@example.test', 'name' => 'Operator'],
+                'tenant' => ['id' => 'gss_tenant_acme', 'role' => 'admin'],
+                'groups' => ['editors'],
+                'locale' => 'pt_BR',
+            ])
+            ->push([
+                'subject' => ['id' => 'gss_subject_1', 'email' => 'repeat-operator@example.test', 'name' => 'Operator'],
+                'tenant' => ['id' => 'gss_tenant_acme', 'role' => 'admin'],
+                'groups' => ['editors'],
+                'locale' => 'en',
+            ]);
+        $login = $this->get('/auth/grandpasson/login/github');
+        parse_str((string) parse_url($login->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->get('/auth/grandpasson/callback?code=one-time-code&state='.$query['state']);
+
+        $user = User::query()->where('email', 'repeat-operator@example.test')->sole();
+        $this->assertSame(1, \App\Infrastructure\Persistence\Eloquent\UserPreference::query()->where('user_id', $user->id)->count());
+
+        $login2 = $this->get('/auth/grandpasson/login/github');
+        parse_str((string) parse_url($login2->headers->get('Location'), PHP_URL_QUERY), $query2);
+        $this->get('/auth/grandpasson/callback?code=another-code&state='.$query2['state']);
+
+        $this->assertSame(1, \App\Infrastructure\Persistence\Eloquent\UserPreference::query()->where('user_id', $user->id)->count());
+        $this->assertSame('en', \App\Infrastructure\Persistence\Eloquent\UserPreference::query()->where('user_id', $user->id)->value('locale'));
+    }
+
     public function test_state_mismatch_fails_closed_without_calling_the_broker(): void
     {
         $this->configureBroker();

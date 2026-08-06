@@ -68,12 +68,18 @@ final class GrandpaSsonIdentityProvider
             return null;
         }
 
+        $locale = $response->json('locale');
+        if (! is_string($locale) || ! in_array($locale, ['en', 'pt_BR'], true)) {
+            $locale = 'en';
+        }
+
         return new GrandpaSsonBrowserIdentity(
             email: $email,
             name: $name,
             brokerTenantId: $tenant['id'],
             brokerRole: $tenant['role'],
             groups: array_values(array_filter($groups, 'is_string')),
+            locale: $locale,
         );
     }
 }
