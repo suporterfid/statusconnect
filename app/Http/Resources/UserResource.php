@@ -19,6 +19,10 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'is_platform_admin' => $this->is_platform_admin,
+            'preferences' => [
+                'locale' => $this->preferences?->locale ?? 'en',
+                'timezone' => $this->preferences?->timezone ?? 'UTC',
+            ],
         ];
     }
 }

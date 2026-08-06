@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\GrandpaSsonTenantMappingController;
 use App\Http\Controllers\Api\V1\IncidentController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MonitorController;
+use App\Http\Controllers\Api\V1\UserPreferencesController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -14,6 +15,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['web', 'auth.api_or_sanctum', 'locale.from_user'])->group(function () {
         Route::post('/auth/logout', LogoutController::class);
         Route::get('/me', MeController::class);
+        Route::patch('/me/preferences', UserPreferencesController::class);
     });
 
     Route::get('/platform/health', function () {

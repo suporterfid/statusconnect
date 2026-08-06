@@ -16,6 +16,8 @@ class MeController extends Controller
 
         abort_unless($user instanceof User, 401);
 
+        $user->loadMissing('preferences');
+
         return response()->json([
             'data' => new UserResource($user),
         ]);
