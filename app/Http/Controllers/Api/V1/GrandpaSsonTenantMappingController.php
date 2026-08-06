@@ -32,7 +32,7 @@ class GrandpaSsonTenantMappingController extends Controller
         ]);
 
         if (array_diff(array_keys($validated['role_mappings']), ['owner', 'admin', 'member']) !== []) {
-            abort(422, 'Broker role mappings may only contain owner, admin, or member.');
+            abort(422, __('messages.invalid_broker_role_mapping'));
         }
 
         $tenant = Tenant::query()->where('public_id', $validated['tenant_public_id'])->firstOrFail();

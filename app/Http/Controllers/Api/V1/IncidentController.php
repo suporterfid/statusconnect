@@ -113,7 +113,7 @@ class IncidentController extends Controller
     {
         $key = trim((string) $request->header('Idempotency-Key'));
         if ($key === '' || strlen($key) > 255) {
-            abort(422, 'A valid Idempotency-Key header is required.');
+            abort(422, __('messages.idempotency_key_required'));
         }
 
         /** @var ApiKey|null $apiKey */

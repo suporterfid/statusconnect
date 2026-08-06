@@ -26,7 +26,7 @@ class LoginController extends Controller
             'password' => $credentials['password'],
         ], $credentials['remember'] ?? false)) {
             throw ValidationException::withMessages([
-                'email' => ['These credentials do not match our records.'],
+                'email' => [__('messages.invalid_credentials')],
             ]);
         }
 
